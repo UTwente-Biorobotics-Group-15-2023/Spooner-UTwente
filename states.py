@@ -1,14 +1,15 @@
 #keeps track of the current state and can update the state
 class State(object):
-    GREEN = 'green'
-    YELLOW = 'yellow'
-    RED = 'red'
-
+    # The state definitions are directly accessible from the Class without creating a specific instance (object) of it
+    CALLIBRATE = 'callibrate'
+    HOME = 'home'
+    HOLD = 'hold'
+    MOVE = 'move'
+    EMERGENCY_STOP = 'emergency_stop'
 
     def __init__(self):
         self.previous = None
-        self.current = self.RED
-    
+        self.current = self.CALLIBRATE
         return
     
     def set(self, state):
@@ -17,5 +18,6 @@ class State(object):
         return
     
     def is_changed(self):
-        return self.previous is not self.current #if previous is not the same as current it would return True so then something changed
+        # if previous STATE is not same as current, state has changed, so return boolean "True"
+        return self.previous is not self.current
 
