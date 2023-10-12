@@ -1,4 +1,5 @@
 from state_machine import StateMachine
 
-robot = StateMachine(1) 
+frequency = 10 # Hz
+robot = StateMachine(frequency) # input ticker frequency at which robot will function
 robot.start()
