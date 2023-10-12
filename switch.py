@@ -4,7 +4,6 @@ from pyb import Pin
 class BlueSwitch(object):
 
     def __init__(self):
-        
         self.switch_value = 0
         self.switch = Switch()
         self.switch.callback(self.callback)
@@ -22,7 +21,6 @@ class BlueSwitch(object):
 class KillSwitchOne(object):
 
     def __init__(self):
-        # The pin that is attached to the kill switch, `Pin.PULL_UP` must be included.
         self.pin_button = Pin('D70', Pin.IN, Pin.PULL_UP)
         return
     
@@ -32,7 +30,6 @@ class KillSwitchOne(object):
 class KillSwitchTwo(object):
 
     def __init__(self):
-        # The pin that is attached to the kill switch, `Pin.PULL_UP` must be included.
         self.pin_button = Pin('D69', Pin.IN, Pin.PULL_UP)
         return
     

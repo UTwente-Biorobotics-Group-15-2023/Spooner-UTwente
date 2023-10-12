@@ -1,10 +1,9 @@
-#keeps track of sensor data
 from switch import BlueSwitch
 from switch import KillSwitchOne
 from switch import KillSwitchTwo
 #from emg_sensor import EmgSensor
 
-class SensorState(object):
+class SensorState(object): # this class keeps track of sensor data
 
     def __init__(self):
         self.switch_value = 0
