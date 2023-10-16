@@ -13,5 +13,5 @@ class SensorState(object):
     
     def update(self):
         self.switch_value = self.blue_switch.value()
-        self.emg_sensor = self.emg_sensor.value() # gives the current value of the emg sensor in vector form with [value emg1, value emg2, value emg3]
+        self.emg_sensor = self.emg_sensor.moving_av() # gives the current value of the emg sensor (the moving average!) in vector form with [value emg1, value emg2, value emg3]
         return

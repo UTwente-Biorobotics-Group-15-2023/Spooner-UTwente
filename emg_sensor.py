@@ -15,7 +15,7 @@ gain_1 = 0.009525762376195455113925270040908799274
 LP_100_10_2 = Biquad(-0.960616192564186621716260106040863320231,  0.919547137907040124105151335243135690689, 1.0, -1.000877940003687793790732030174694955349, 1.0)
 gain_2 = 0.959773568953520062052575667621567845345
 
-# 300Hz fs; 2Hz - 7Hz cut off Butterworth pand pass
+# 300Hz fs; 2Hz - 7Hz cut off Butterworth band pass
 BP_filter = Biquad(-1.894566421316362658799903329054359346628, 0.900404044297840822075329469953430816531, 1, 0, -1)
 BP_gain = 0.049797977851079575084547457208827836439
 
@@ -25,10 +25,19 @@ class EmgSensor():
         self.emg_sensor_value = np.zeros(len(emgs)) # value of EMG [sensor 1, sensor 2, sensor 3]
         return
     
-    def value(self): #return the current filtered value 
+    def filtered_emg(self): #return the current filtered value and takes the absolute value 
         
         for i in enumerate(emgs):
-            self.emg_sensor_value[i] = BP_gain * BP_filter.filter(emgs[i].read()) # returns filtered signal by applying filter function from Biquad class
+            self.emg_sensor_value[i] = abs(BP_gain * BP_filter.filter(emgs[i].read())) # returns filtered signal by applying filter function from Biquad class and takes the absolute value
             
         return_value = self.emg_sensor_value
         return return_value
+    
+    def moving_av(self): # calculate the moving average
+        
+        filter_data= self.filtered_emg()
+        
+        
+        return_value = self.emg_sensor_value
+        return return_value 
+
