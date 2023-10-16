@@ -22,7 +22,7 @@ BP_gain = 0.049797977851079575084547457208827836439
 class EmgSensor(): 
 
     def __init__(self):
-        self.emg_sensor_value = np.zeros(len(emgs)) # value of EMG [sensor 1, sensor 2, sensor 3]
+        self.emg_sensor_value = [emgs[0].read(), emgs[1].read(), emgs[2].read()] # value of EMG [sensor 1, sensor 2, sensor 3]
         return
     
     def filtered_emg(self): #return the current filtered value and takes the absolute value 
@@ -33,11 +33,9 @@ class EmgSensor():
         return_value = self.emg_sensor_value
         return return_value
     
-    def moving_av(self): # calculate the moving average
+    # def moving_av(self): # calculate the moving average to be finished 
         
-        filter_data= self.filtered_emg()
-        
-        
-        return_value = self.emg_sensor_value
-        return return_value 
+    #     filter_data= self.filtered_emg()
+    #     return_value = self.emg_sensor_value
+    #     return return_value 
 

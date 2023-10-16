@@ -1,13 +1,20 @@
 from states import State
 from pyb import LED
+from motor import Motor
 
 class StateFunctions(object):
 
-    def __init__(self, robot_state, sensor_state):
+    def __init__(self, robot_state, sensor_state, ticker_frequency):
         self.led_yellow = LED(2) # Yellow LED on Nucleo
         self.led_red = LED(3)   # RED LED on Nucleo
         self.robot_state = robot_state
         self.sensor_state = sensor_state
+
+        ## Motors
+        self.motor_1 = Motor(ticker_frequency, 1)
+        self.motor_2 = Motor(ticker_frequency, 2)
+        
+        ## Callback states
         self.callbacks = {
             State.CALLIBRATE: self.callibrate,
             State.HOME: self.home,
