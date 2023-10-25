@@ -16,7 +16,7 @@ class EncoderStats(object):
 
     def get_angle(self):
         self.count = self.encoder.counter() % 8400
-        self.angle = self.count * 360 / 4800
+        self.angle = self.count * 360 / 8400
         return self.angle
 
     def get_angular_velocity(self):
