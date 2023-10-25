@@ -30,4 +30,5 @@ class StateMachine(object):
     def stop(self):
         print('robot shutting down')
         self.ticker.stop()
+        
         return
