@@ -1,7 +1,7 @@
 from states import State
 from pyb import LED
 from motor import Motor
-from encoder import Encoder_own
+from encoderstats import EncoderStats
 
 
 class StateFunctions(object):
@@ -11,7 +11,7 @@ class StateFunctions(object):
         self.led_red = LED(3)   # RED LED on Nucleo
         self.robot_state = robot_state
         self.sensor_state = sensor_state
-        self.encoder = Encoder_own()
+        self.encoder = EncoderStats()
 
         ## Motors
         self.motor_1 = Motor(ticker_frequency, 1)
@@ -130,4 +130,3 @@ class StateFunctions(object):
         # NO EXIT GUARDS as this is a final state - reboot robot to restart
 
         return
-        

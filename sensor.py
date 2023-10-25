@@ -2,6 +2,7 @@ from switch import BlueSwitch
 from switch import KillSwitchOne, KillSwitchTwo
 from emg_sensor import EmgSensor
 from potmeter import PotMeter
+from encoderstats import EncoderStats
 
 class SensorState(object): # this class keeps track of sensor data
 
@@ -22,6 +23,10 @@ class SensorState(object): # this class keeps track of sensor data
         ## Potmeter
         self.potmeter = PotMeter() 
         self.potmeter_value = self.potmeter.value() #potmeter value with [pot1, pot2]
+
+        ## Encoder
+        self.encoder_motor_1 = EncoderStats(1)
+        self.encoder_motor_2 = EncoderStats(2)
         return
     
     def update(self):
@@ -37,8 +42,6 @@ class SensorState(object): # this class keeps track of sensor data
         #self.emg_sensor = self.emg_sensor.moving_av() # gives the current value of the emg sensor (the moving average!) in vector form with [value emg1, value emg2, value emg3]
         
         ## Encoder
-        # self.encoder_1 = Encoder(Pins.MOTOR_1_ENCODER_1, Pins.MOTOR_1_ENCODER_2)
-        # self.encoder_2 = Encoder(Pins.MOTOR_2_ENCODER_1, Pins.MOTOR_2_ENCODER_2)
-        # self.encoder_1_value = self.encoder_1.counter()
-        # self.encoder_2_value = self.encoder_2.counter()
+        self.angle_motor_1 = self.encoder_motor_1.get_angle()
+        self.angle_motor_2 = self.encoder_motor_2.get_angle()
         return
