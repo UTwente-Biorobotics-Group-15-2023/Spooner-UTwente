@@ -1,7 +1,7 @@
 from states import State
 from pyb import LED
 from motor import Motor
-
+from compensation_controller import CompensationController
 
 class StateFunctions(object):
 
@@ -10,6 +10,12 @@ class StateFunctions(object):
         self.led_red = LED(3)   # RED LED on Nucleo
         self.robot_state = robot_state
         self.sensor_state = sensor_state
+
+        ## Compensation controller
+        self.compensation_controller = CompensationController(ticker_frequency)
+        self.angle_previous_1 = 1
+        self.angle_current_1 = 1
+
 
         ## Motors
         self.motor_1 = Motor(ticker_frequency, 1)
@@ -55,8 +61,18 @@ class StateFunctions(object):
             self.led_yellow.off()
             self.robot_state.set(State.HOME)
         ## Main action
+
+        #Compensation controller (motor 1)
+        self.angle_previous_1 = self.angle_current_1
+        self.angle_current_1 = self.sensor_state.angle_motor_1
         print(self.sensor_state.angle_motor_1)
-        print(self.sensor_state.angle_motor_2)
+        #print(self.angle_previous_1)
+        #print("Current:")
+        #print(self.angle_current_1)
+        #self.compensated_PWM_value = self.compensation_controller.calculate_u(self.angle_current_1,self.angle_previous_1)
+        #print(self.compensated_PWM_value)
+        #self.motor_1.write(self.compensated_PWM_value)
+
         # TODO: write code to control the motors such that the arm moves to the home position
 
         if self.sensor_state.ks_one_value == 1:
