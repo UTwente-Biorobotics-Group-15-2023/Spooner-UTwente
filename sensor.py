@@ -5,7 +5,10 @@ from potmeter import PotMeter
 
 class SensorState(object): # this class keeps track of sensor data
 
-    def __init__(self):
+    def __init__(self, serial_pc):
+
+        ## Serial PC
+
         ## Blue switch
         self.switch_value = 0
         self.blue_switch = BlueSwitch()
@@ -17,12 +20,16 @@ class SensorState(object): # this class keeps track of sensor data
         self.kill_switch_two = KillSwitchTwo()
 
         ## Emg sensor
-        self.emg_sensor = EmgSensor()
+        self.emg_sensor = EmgSensor(serial_pc)
 
         ## Potmeter
         self.potmeter = PotMeter() 
         self.potmeter_value = self.potmeter.value() #potmeter value with [pot1, pot2]
+
         return
+    
+
+
     
     def update(self):
 

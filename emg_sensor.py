@@ -19,19 +19,29 @@ gain_2 = 0.959773568953520062052575667621567845345
 BP_filter = Biquad(-1.894566421316362658799903329054359346628, 0.900404044297840822075329469953430816531, 1, 0, -1)
 BP_gain = 0.049797977851079575084547457208827836439
 
-class EmgSensor(): 
+pc = SerialPC(3)
 
-    def __init__(self):
+class EmgSensor(object): 
+
+    def __init__(self, serial_pc):
+        """
+        @param self: 
+        @param serial_pc: SerialPC class that is created in statemachine
+        @return:
+        """
         self.emg_sensor_value = [emgs[0].read(), emgs[1].read(), emgs[2].read()] # value of EMG [sensor 1, sensor 2, sensor 3]
+        self.serial_pc = serial_pc
         return
     
     def filtered_emg(self): #return the current filtered value and takes the absolute value 
         
         for i in enumerate(emgs):
-            self.emg_sensor_value[i] = abs(BP_gain * BP_filter.filter(emgs[i].read())) # returns filtered signal by applying filter function from Biquad class and takes the absolute value
+            #self.emg_sensor_value[i] = abs(BP_gain * BP_filter.filter(emgs[i].read())) # returns filtered signal by applying filter function from Biquad class and takes the absolute value
+            pc.set(1)
+            pc.send()            
             
         return_value = self.emg_sensor_value
-        return return_value
+        return 0
     
     # def moving_av(self): # calculate the moving average to be finished 
         
