@@ -19,9 +19,7 @@ class StateMachine(object):
         self.sensor_state.update()       
         # print(self.sensor_state.switch_value)
         # get the current state value and translate it to the callback function to execute
-        #### self.state_functions.callbacks[self.robot_state.current]()
-
-        print(self.sensor_state.angle_motor_1)
+        self.state_functions.callbacks[self.robot_state.current]()
         return
     
     def start(self):
