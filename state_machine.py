@@ -2,14 +2,12 @@ from biorobotics import Ticker
 from states import State
 from sensor import SensorState
 from state_functions import StateFunctions
-from switch import BlueSwitch
-from biorobotics import SerialPC
 
 class StateMachine(object):
     def __init__(self, ticker_frequency):
-        self.serial_pc = SerialPC(3) # serial used for monotoring, passed to self.sensor_state to have just 1 serial where everything is plotted
+        # self.serial_pc = SerialPC(3) # serial used for monotoring, passed to self.sensor_state to have just 1 serial where everything is plotted
         self.robot_state = State()
-        self.sensor_state = SensorState(self.serial_pc)
+        self.sensor_state = SensorState()
         self.state_functions = StateFunctions(self.robot_state, self.sensor_state, ticker_frequency)
         self.ticker = Ticker(0, ticker_frequency, self.run) #1 number on hardware timer, 2 frequency, 3 function you want to run
         

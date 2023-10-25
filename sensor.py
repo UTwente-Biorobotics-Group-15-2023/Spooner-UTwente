@@ -1,11 +1,10 @@
-from switch import BlueSwitch
-from switch import KillSwitchOne, KillSwitchTwo
+from switch import BlueSwitch, KillSwitchOne, KillSwitchTwo
 from emg_sensor import EmgSensor
 from potmeter import PotMeter
 
 class SensorState(object): # this class keeps track of sensor data
 
-    def __init__(self, serial_pc):
+    def __init__(self):
 
         ## Serial PC
 
@@ -20,16 +19,14 @@ class SensorState(object): # this class keeps track of sensor data
         self.kill_switch_two = KillSwitchTwo()
 
         ## Emg sensor
-        self.emg_sensor = EmgSensor(serial_pc)
+        self.emg_sensor = EmgSensor()
+        self.emg_value = 0
 
         ## Potmeter
         self.potmeter = PotMeter() 
         self.potmeter_value = self.potmeter.value() #potmeter value with [pot1, pot2]
 
         return
-    
-
-
     
     def update(self):
 
@@ -41,6 +38,7 @@ class SensorState(object): # this class keeps track of sensor data
         self.ks_two_value = self.kill_switch_two.value()
 
         ## Emg sensor
+        self.emg_value = self.emg_sensor.filtered_emg()
         #self.emg_sensor = self.emg_sensor.moving_av() # gives the current value of the emg sensor (the moving average!) in vector form with [value emg1, value emg2, value emg3]
         
         ## Encoder
