@@ -65,13 +65,9 @@ class StateFunctions(object):
         #Compensation controller (motor 1)
         self.angle_previous_1 = self.angle_current_1
         self.angle_current_1 = self.sensor_state.angle_motor_1
-        print(self.sensor_state.angle_motor_1)
-        #print(self.angle_previous_1)
-        #print("Current:")
-        #print(self.angle_current_1)
-        #self.compensated_PWM_value = self.compensation_controller.calculate_u(self.angle_current_1,self.angle_previous_1)
-        #print(self.compensated_PWM_value)
-        #self.motor_1.write(self.compensated_PWM_value)
+        self.compensated_PWM_value = self.compensation_controller.calculate_u(self.angle_current_1,self.angle_previous_1)
+        print(self.compensated_PWM_value)
+        self.motor_1.write(self.compensated_PWM_value)
 
         # TODO: write code to control the motors such that the arm moves to the home position
 
@@ -132,6 +128,7 @@ class StateFunctions(object):
             ## Entry action
             print("entered EMERGENCY state")
             self.robot_state.set(State.EMERGENCY_STOP)
+            self.motor_1.write(0)
         ## Main action
 
         ## Exit guards

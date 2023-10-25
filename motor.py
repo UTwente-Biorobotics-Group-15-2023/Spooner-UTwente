@@ -26,6 +26,8 @@ class Motor(object):
         
         """
 
+        #TODO: fix motor direction switching
+
         if pwm_value < 0:
             self.direction.value(1) #set direction
         else:
