@@ -1,7 +1,6 @@
 from states import State
 from pyb import LED
 from motor import Motor
-from encoderstats import EncoderStats
 
 
 class StateFunctions(object):
@@ -11,7 +10,6 @@ class StateFunctions(object):
         self.led_red = LED(3)   # RED LED on Nucleo
         self.robot_state = robot_state
         self.sensor_state = sensor_state
-        self.encoder = EncoderStats()
 
         ## Motors
         self.motor_1 = Motor(ticker_frequency, 1)
@@ -39,12 +37,6 @@ class StateFunctions(object):
             self.robot_state.set(State.CALLIBRATE)
         ## Main action
         
-        count = self.encoder.norm_count()
-        print(count)
-
-        motor_1 = Motor(10,1)
-        motor_1.write(0.3)
-        print('motor is on')
         ## Exit guards
         if self.sensor_state.switch_value == 1:
             # TODO: uncomment the below and delete the substitute
@@ -63,7 +55,8 @@ class StateFunctions(object):
             self.led_yellow.off()
             self.robot_state.set(State.HOME)
         ## Main action
-
+        print(self.sensor_state.angle_motor_1)
+        print(self.sensor_state.angle_motor_2)
         # TODO: write code to control the motors such that the arm moves to the home position
 
         if self.sensor_state.ks_one_value == 1:

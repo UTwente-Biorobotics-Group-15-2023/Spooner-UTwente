@@ -30,6 +30,8 @@ class SensorState(object): # this class keeps track of sensor data
         ## Encoder
         self.encoder_motor_1 = EncoderStats(1)
         self.encoder_motor_2 = EncoderStats(2)
+        self.angle_motor_1 = 0
+        self.angle_motor_2 = 0
         return
     
     def update(self):
