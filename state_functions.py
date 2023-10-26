@@ -60,7 +60,8 @@ class StateFunctions(object):
             self.robot_state.set(State.HOME)
             print("HOME")
         ## Main action
-
+        print(self.sensor_state.ks_one_value)
+        print(self.sensor_state.ks_two_value)
 
 
         # TODO: write code to control the motors such that the arm moves to the home position
@@ -82,7 +83,7 @@ class StateFunctions(object):
             print("!! emergency !!")
             self.robot_state.set(State.EMERGENCY_STOP)
 
-        if self.sensor_state.ks_one_value == 0 and self.sensor_state.ks_two_value == 0:
+        if self.sensor_state.ks_one_value == 1 and self.sensor_state.ks_two_value == 1:
             self.led_red.off()
             self.led_yellow.off()
             print("ROBOT REACHED HOME POSITION")
@@ -97,14 +98,14 @@ class StateFunctions(object):
 
         ## Main action
         # Kill the motors
-
+        self.motor_1.write(0)
 
         ## Exit guards
         if self.sensor_state.switch_value == 1:
             self.robot_state.set(State.EMERGENCY_STOP)
 
         # TODO: Testing switching states with the kill switches, create a CONTINUE signal to transition to MOVE if CONTINUE signal is detected
-        if self.sensor_state.ks_one_value == 0 and self.sensor_state.ks_two_value == 0:
+        if self.sensor_state.ks_one_value == 1:# and self.sensor_state.ks_two_value == 1:
             self.robot_state.set(State.MOVE)
         return
 
@@ -127,7 +128,7 @@ class StateFunctions(object):
         if self.sensor_state.switch_value == 1:
             self.robot_state.set(State.EMERGENCY_STOP)
         #TODO: Testing switching states with the kill switches, create a HOLD signal
-        elif self.sensor_state.ks_one_value == 1 and self.sensor_state.ks_two_value == 1:
+        elif self.sensor_state.ks_one_value == 0:# and self.sensor_state.ks_two_value == 0:
             self.robot_state.set(State.HOLD)
         return
 

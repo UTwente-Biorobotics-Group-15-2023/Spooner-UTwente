@@ -6,8 +6,8 @@ class CompensationController(object):
         self.velocity = 0
         self.angle_previous = 0
         self.dt = 1 / ticker_frequency
-        self.c1 = 0.003
-        self.c2 = -0.0015
+        self.c1 = 0 #0.003
+        self.c2 = 0.006
         self.c3 = 6
         self.u_dry = 0
         self.u_viscous_and_backemf = 0
