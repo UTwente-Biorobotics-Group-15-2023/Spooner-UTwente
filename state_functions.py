@@ -10,12 +10,17 @@ class StateFunctions(object):
         self.led_red = LED(3)   # RED LED on Nucleo
         self.robot_state = robot_state
         self.sensor_state = sensor_state
+        self.frequency = ticker_frequency
+
+        # EMG calibration
+        self.max_emg_pre_calibration = 0
+        self.calibration_timer = 0
+        self.calibration_time = 10 # in seconds
 
         ## Compensation controller
         self.compensation_controller = CompensationController(ticker_frequency)
         self.angle_previous_1 = 1
         self.angle_current_1 = 1
-
 
         ## Motors
         self.motor_1 = Motor(ticker_frequency, 1)
@@ -31,26 +36,29 @@ class StateFunctions(object):
         }
         return
 
-    ##State
+    ## State CALIBRATE
     def calibrate(self):
         # The below if statement makes sure we only execute entry action once
         # basically - checks if the states differ between this and previous update
         if self.robot_state.is_changed():
             ## Entry action
             print('Lets calibrate the EMG input!')
-            print('Please remain still and relaxed for 10 seconds')
-            print('When the LED turns off, you should contract your muscles as hard as you can')
-            print('for now you can press BlueSwitch to proceed to HOME state')
+            print('Please contract your muscles as hard as you can for a few seconds')
+            print('When the robot begins to move, you can stop')
             self.robot_state.set(State.CALLIBRATE)
 
         ## Main action
-        #TODO: Create calibration code
+        self.max_emg_pre_calibration = max([self.max_emg_pre_calibration, self.sensor_state.emg_value])
+        self.calibration_timer += 1
 
         ## Exit guards
-        if self.sensor_state.switch_value == 1:
+        if self.calibration_timer >= self.frequency * self.calibration_time:
+            self.calibration_timer = 0
+            self.sensor_state.set_calibration_coefficient(self.max_emg_pre_calibration)
             self.robot_state.set(State.HOME)
         return
 
+    ## State HOME
     def home(self):
         if self.robot_state.is_changed():
             ## Entry action
@@ -59,13 +67,12 @@ class StateFunctions(object):
             self.led_yellow.off()
             self.robot_state.set(State.HOME)
             print("HOME")
+            print("Move the robot to its home state to continue")
         ## Main action
-        print(self.sensor_state.ks_one_value)
-        print(self.sensor_state.ks_two_value)
 
+        # TODO: write code to control the motors such that the arm moves to the home position by itself
 
-        # TODO: write code to control the motors such that the arm moves to the home position
-
+        # The below code indicates the status of the kill-switches using on-Nucleo LED's
         if self.sensor_state.ks_one_value == 1:
             self.led_yellow.off()
         else:
@@ -75,7 +82,6 @@ class StateFunctions(object):
         else:
             self.led_red.on()
 
-
         ## Exit guards
         if self.sensor_state.switch_value == 1:
             self.led_red.off()
@@ -83,13 +89,16 @@ class StateFunctions(object):
             print("!! emergency !!")
             self.robot_state.set(State.EMERGENCY_STOP)
 
-        if self.sensor_state.ks_one_value == 1 and self.sensor_state.ks_two_value == 1:
+        if self.sensor_state.ks_one_value == 0 and self.sensor_state.ks_two_value == 0:
             self.led_red.off()
             self.led_yellow.off()
             print("ROBOT REACHED HOME POSITION")
-            self.robot_state.set(State.HOLD)
+            # TODO: switch this back after testing
+            # self.robot_state.set(State.HOLD)
+            self.robot_state.set(State.MOVE)
         return
 
+    ## State HOLD
     def hold(self):
         if self.robot_state.is_changed():
             ## Entry action
@@ -109,6 +118,7 @@ class StateFunctions(object):
             self.robot_state.set(State.MOVE)
         return
 
+    ## State MOVE
     def move(self):
         if self.robot_state.is_changed():
             ## Entry action
@@ -117,12 +127,17 @@ class StateFunctions(object):
 
         ## Main action
 
+        # TODO: map the emg_value to pwm signal and send to the motors!
+        emg0 = self.sensor_state.emg_value # hopefully 0 to 1
+        emg0 *= 0.3 # motor safety factor
+        self.motor_1.write(emg0)
+
         # Compensation controller (motor 1)
-        self.angle_previous_1 = self.angle_current_1
-        self.angle_current_1 = self.sensor_state.angle_motor_1
-        self.compensated_PWM_value = self.compensation_controller.calculate_u(self.angle_current_1, self.angle_previous_1)
-        print(self.compensated_PWM_value)
-        self.motor_1.write(self.compensated_PWM_value)
+        # self.angle_previous_1 = self.angle_current_1
+        # self.angle_current_1 = self.sensor_state.angle_motor_1
+        # self.compensated_PWM_value = self.compensation_controller.calculate_u(self.angle_current_1, self.angle_previous_1)
+        # print(self.compensated_PWM_value)
+        # self.motor_1.write(self.compensated_PWM_value)
 
         ## Exit guards
         if self.sensor_state.switch_value == 1:
@@ -132,16 +147,14 @@ class StateFunctions(object):
             self.robot_state.set(State.HOLD)
         return
 
+    ## State EMERGENCY_STOP
     def emergency_stop(self):
         if self.robot_state.is_changed():
             ## Entry action
             print("entered EMERGENCY state")
             self.robot_state.set(State.EMERGENCY_STOP)
             self.motor_1.write(0)
-        ## Main action
-
-        ## Exit guards
-
-        # NO EXIT GUARDS as this is a final state - reboot robot to restart
-
+            self.motor_2.write(0)
+        ## Main action - NO MAIN ACTION I GUESS (?)
+        ## Exit guards - NO EXIT GUARDS as this is a final state - reboot robot to restart
         return

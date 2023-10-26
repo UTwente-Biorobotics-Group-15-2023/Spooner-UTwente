@@ -32,7 +32,7 @@ class EmgSensor(object):
 
     def __init__(self):
         self.sample_list = []
-        self.normalization_factor = 0.045 # we will determine this during calibration step, stronger person -> larger factor
+        self.normalization_factor = 1 # we determine this during calibration step, stronger person -> larger factor, begins at 1, then set to max emg value recorded during calibration step
         self.window_size = 80
         self.emg_sensor_value = [0, 0, 0] # initial value of EMG [sensor 1, sensor 2, sensor 3]
         return
@@ -62,11 +62,11 @@ class EmgSensor(object):
         
         # the FILTERING IS BELOW HERE
         cumulative_sum = sum(self.sample_list)
-        return cumulative_sum / len(self.sample_list) / self.normalization_factor # return the average divided by the normalization factor
+        return cumulative_sum / len(self.sample_list) / self.normalization_factor # return the average divided by the normalization factor (max emg signal during calibration)
     
     
+    # Function called within the SENSOR STATE UPDATE()
     def filtered_emg(self): #return the current filtered value and takes the absolute value 
-        
         # TODO: revamp this code - we cannot use one filter instance for all three signals
         # for i, emg in enumerate(emgs):
         #     self.emg_sensor_value[i] = abs(BP_gain * BP_filter.filter(emgs[i].read())) # returns filtered signal by applying filter function from Biquad class and takes the absolute value
@@ -82,3 +82,9 @@ class EmgSensor(object):
 
         pc.send()
         return femg0_avg    # TODO: the ouput is set to 0 for now, this should be updated later on
+    
+
+    # Function called within the exit action of CALIBRATE state function
+    def set_calibration_coefficient(self, coef):
+        self.normalization_factor = coef
+        return
