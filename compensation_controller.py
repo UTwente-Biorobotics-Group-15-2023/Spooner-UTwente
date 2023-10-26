@@ -1,10 +1,12 @@
 from ulab import numpy as np
+
+
 class CompensationController(object):
     def __init__(self, ticker_frequency):
         self.velocity = 0
         self.angle_previous = 0
-        self.dt = 1/ticker_frequency
-        self.c1 = 0.002
+        self.dt = 1 / ticker_frequency
+        self.c1 = 0.003
         self.c2 = -0.0015
         self.c3 = 6
         self.u_dry = 0
@@ -21,5 +23,3 @@ class CompensationController(object):
         elif self.u < -1:
             self.u = -1
         return self.u
-
-
