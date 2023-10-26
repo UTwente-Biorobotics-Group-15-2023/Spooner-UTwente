@@ -16,8 +16,8 @@ class SensorState(object): # this class keeps track of sensor data
         ## Kill switches
         self.ks_one_value = 0  # switch 1 for finding the arm's home state
         self.ks_two_value = 0  # switch 2 for finding the arm's home state
-        self.kill_switch_one = KillSwitchOne()
-        self.kill_switch_two = KillSwitchTwo()
+        self.kill_switch_one = KillSwitchOne() # default pin is "D70"
+        self.kill_switch_two = KillSwitchTwo() # default pin is "D69" *nice*
 
         ## Emg sensor
         self.emg_sensor = EmgSensor()
@@ -45,7 +45,8 @@ class SensorState(object): # this class keeps track of sensor data
 
         ## Emg sensor
         self.emg_value = self.emg_sensor.filtered_emg()
-        #self.emg_sensor = self.emg_sensor.moving_av() # gives the current value of the emg sensor (the moving average!) in vector form with [value emg1, value emg2, value emg3]
+        # self.emg_sensor = self.emg_sensor.moving_av() # gives the current value of the emg sensor (the moving
+        # average!) in vector form with [value emg1, value emg2, value emg3]
         
         ## Encoder
         self.angle_motor_1 = self.encoder_motor_1.get_angle()
