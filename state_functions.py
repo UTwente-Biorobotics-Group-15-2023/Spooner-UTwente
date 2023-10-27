@@ -114,8 +114,8 @@ class StateFunctions(object):
         ## Main action
 
         # TODO: map the emg_value to pwm signal and send to the motors!
-        emg0 = self.sensor_state.emg_value                  # hopefully 0 to 1
-        emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0   # let's make sure it's 0 to 1
+        emg0 = self.sensor_state.emg_value[0]                 # hopefully 0 to 1
+        emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's 0 to 1
         emg0 *= -0.85                                         # motor safety factor - let's not use mre than 0.6 of max power
         print(emg0)
         self.motor_1.write(emg0)
