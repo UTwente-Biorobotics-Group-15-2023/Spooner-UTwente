@@ -18,8 +18,8 @@ class StateFunctions(object):
 
 
         ## Motors
-        self.motor_1 = Motor(ticker_frequency, 1)
-        self.motor_2 = Motor(ticker_frequency, 2)
+        self.motor_1 = Motor(18000, 1)
+        self.motor_2 = Motor(18000, 2)
 
         ## Callback states
         self.callbacks = {
@@ -118,6 +118,11 @@ class StateFunctions(object):
         ## Main action
 
         # Compensation controller (motor 1)
+        #self.c1 = 0.05
+        #self.c2 = 0
+        #self.c3 = 6
+
+        self.compensation_controller.change_coefficient(self.sensor_state.potmeter_value)
         self.angle_previous_1 = self.angle_current_1
         self.angle_current_1 = self.sensor_state.angle_motor_1
         self.compensated_PWM_value = self.compensation_controller.calculate_u(self.angle_current_1, self.angle_previous_1)
