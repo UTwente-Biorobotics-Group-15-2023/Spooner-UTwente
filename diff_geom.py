@@ -7,26 +7,7 @@
 # option B: we're on old micropython, so get ulab
 # option C: we have the new ulab, which includes numpy _and_ scipy
 
-np = None
-# option A
-try:
-    import numpy as np
-except ImportError:
-    print("rki: numpy not available")
-if np is None:
-    # option C (comes first)
-    try:
-        from ulab import numpy as np
-    except ImportError:
-        print("rki: not modern ulab")
-if np is None:
-    # option B
-    try:
-        import ulab as np
-    except ImportError:
-        print("rki: not old ulab either! cannot continue")
-        raise
-
+from ulab import numpy as np
 
 def tilde(T):
     # return Tilde form of a vector-twist

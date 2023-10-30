@@ -7,8 +7,6 @@ class SensorState(object): # this class keeps track of sensor data
 
     def __init__(self):
 
-        ## Serial PC
-
         ## Blue switch
         self.switch_value = 0
         self.blue_switch = BlueSwitch()
@@ -52,6 +50,6 @@ class SensorState(object): # this class keeps track of sensor data
         self.angle_motor_2 = self.encoder_motor_2.get_angle()
         return
     
-    def set_calibration_coefficient(self, coef):
-        self.emg_sensor.set_calibration_coefficient(coef)
+    def set_calibration_coefficients(self, coef0, coef1, coef2):
+        self.emg_sensor.set_calibration_coefficients(coef0, coef1, coef2)
         return
