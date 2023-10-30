@@ -1,6 +1,7 @@
 from states import State
 from motor import Motor
 from compensation_controller import CompensationController
+from ulab import numpy as np
 
 class StateFunctions(object):
 
@@ -16,14 +17,22 @@ class StateFunctions(object):
         self.calibration_time = 10 # in seconds
         self.calibration_sum = 0
 
+        self.T = 4
+
+        self.ticker_period = 1/ticker_frequency
+        self.sin_total_steps = self.T/self.ticker_period
+        self.sin_step = 2*np.pi / self.sin_total_steps
+        self.time = 0
+        self.n = 0
+
+        #self.sensor_state.
+
         ## Compensation controller
         self.compensation_controller = CompensationController(ticker_frequency)
-        self.angle_previous_1 = 1
-        self.angle_current_1 = 1
 
         ## Motors
-        self.motor_1 = Motor(ticker_frequency, 1)
-        self.motor_2 = Motor(ticker_frequency, 2)
+        self.motor_1 = Motor(18000, 1)
+        self.motor_2 = Motor(18000, 2)
 
         ## Callback states
         self.callbacks = {
@@ -71,11 +80,21 @@ class StateFunctions(object):
             print('press BlueSwitch for EMERGENCY state')
         ## Main action
 
-        # TODO: write code to control the motors such that the arm moves to the home position by itself
+
+        # Turn on M1 at low speed until ks is reached
+        self.motor_1.write(-0.8)
+        if self.sensor_state.ks_one_value == 0:
+            self.motor_1.write(0)
+        # Turn on M2 at low speed until ks is reached
+        self.motor_2.write(-0.7)
+        if self.sensor_state.ks_two_value == 0:
+            self.motor_2.write(0)
 
         ## Exit guards
         if self.sensor_state.switch_value == 1:
             print("!! emergency !!")
+            self.motor_1.write(0)
+            self.motor_2.write(0)
             self.robot_state.set(State.EMERGENCY_STOP)
 
         if self.sensor_state.ks_one_value == 0 and self.sensor_state.ks_two_value == 0:
@@ -121,11 +140,25 @@ class StateFunctions(object):
         # self.motor_1.write(emg0)  # TODO: uncomment for the motor to move
 
         # Compensation controller (motor 1)
+        #self.c1 = 0.05
+        #self.c2 = 0
+        #self.c3 = 6
+
+        self.compensation_controller.change_coefficient(self.sensor_state.potmeter_value)
+        print(self.compensation_controller.c2)
+        self.compensated_PWM_value = self.compensation_controller.calculate_u(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_1_previous)
+        self.motor_1.write(self.compensated_PWM_value)
         # self.angle_previous_1 = self.angle_current_1
         # self.angle_current_1 = self.sensor_state.angle_motor_1
         # self.compensated_PWM_value = self.compensation_controller.calculate_u(self.angle_current_1, self.angle_previous_1)
         # print(self.compensated_PWM_value)
         # self.motor_1.write(self.compensated_PWM_value)
+
+        #self.time = self.n * self.ticker_period
+        #self.pwm_value = 0.6 * np.sin(self.sin_step*self.n)
+        #self.motor_1.write(self.pwm_value)
+        #print(self.pwm_value)
+        #self.n += 1
 
         ## Exit guards
         if self.sensor_state.switch_value == 1:
