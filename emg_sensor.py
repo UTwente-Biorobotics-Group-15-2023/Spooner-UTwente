@@ -14,71 +14,83 @@ from biquad import  Biquad
 
 
 # THE NEW FILTERS - ONLY LET THROUGHT THE GREAT STUFF!
-# 300Hz fs; 10Hz cut off Butterworth high pass
-LP_10_low =         Biquad(-1.4182,    0.5528,   0.7427,  -1.4855,    0.7427)
-# 300Hz fs; 48-52 band stop Butterworth
-LP_48_52_stop =     Biquad(-0.9556,    0.9253,   0.9626,  -0.9556,    0.9626)
-# 300Hz fs; 98-102 band stop Butterworth
-LP_98_102_stop =    Biquad( 0.9855,    0.9439,   0.9855,   0.9439,    0.9711)
+LP_10_low_0 =         Biquad(-1.4182,    0.5528,   0.7427,  -1.4855,    0.7427)   # 300Hz fs; 10Hz cut off Butterworth high pass
+LP_48_52_stop_0 =     Biquad(-0.9556,    0.9253,   0.9626,  -0.9556,    0.9626)   # 300Hz fs; 48-52 band stop Butterworth
+LP_98_102_stop_0 =    Biquad( 0.9855,    0.9439,   0.9855,   0.9439,    0.9711)   # 300Hz fs; 98-102 band stop Butterworth
 
-emg0 = AnalogIn('A0')
-emg1 = AnalogIn('A1')
-emg2 = AnalogIn('A2')
-#emgs = [AnalogIn('A0'), AnalogIn('A1'), AnalogIn('A2')]
+LP_10_low_1 =         Biquad(-1.4182,    0.5528,   0.7427,  -1.4855,    0.7427)   # 300Hz fs; 10Hz cut off Butterworth high pass
+LP_48_52_stop_1 =     Biquad(-0.9556,    0.9253,   0.9626,  -0.9556,    0.9626)   # 300Hz fs; 48-52 band stop Butterworth
+LP_98_102_stop_1=    Biquad( 0.9855,    0.9439,   0.9855,   0.9439,    0.9711)   # 300Hz fs; 98-102 band stop Butterworth
+
+LP_10_low_2 =         Biquad(-1.4182,    0.5528,   0.7427,  -1.4855,    0.7427)   # 300Hz fs; 10Hz cut off Butterworth high pass
+LP_48_52_stop_2 =     Biquad(-0.9556,    0.9253,   0.9626,  -0.9556,    0.9626)   # 300Hz fs; 48-52 band stop Butterworth
+LP_98_102_stop_2 =    Biquad( 0.9855,    0.9439,   0.9855,   0.9439,    0.9711)   # 300Hz fs; 98-102 band stop Butterworth
+
+# putting the filters in one array
+filters_0 = [LP_10_low_0, LP_48_52_stop_0, LP_98_102_stop_0]
+filters_1 = [LP_10_low_1, LP_48_52_stop_1, LP_98_102_stop_1]
+filters_2 = [LP_10_low_2, LP_48_52_stop_2, LP_98_102_stop_2]
+filters = [filters_0, filters_1, filters_2]
+
+emgs = [AnalogIn('A0'), AnalogIn('A1'), AnalogIn('A2')]
 pc = SerialPC(3)
 
 class EmgSensor(object): 
 
 
     def __init__(self):
-        self.sample_list = []
-        self.normalization_factor = 0.045 # we will determine this during calibration step, stronger person -> larger factor
+        self.sample_lists = [[], [], []]
+        self.normalization_factor = 1 # we determine this during calibration step, stronger person -> larger factor, begins at 1, then set to max emg value recorded during calibration step
         self.window_size = 80
         self.emg_sensor_value = [0, 0, 0] # initial value of EMG [sensor 1, sensor 2, sensor 3]
         return
     
 
-    # Combination of multiple filters - filters out the DC component, the 50HZ and the 100Hz peaks
-    def prefilter(self, data):
-        # Filtering 10Hz high pass - getting rid of DC components
-        fdata = LP_10_low.filter(data)
-        # Filtering out 50Hz and 100Hz interferance peaks
-        fdata =  LP_48_52_stop.filter(fdata)
-        fdata = LP_98_102_stop.filter(fdata)
-        return fdata
+    # Combination of multiple filters, Filtering 10Hz high pass to get rid of DC components, then filtering out 50Hz & 100Hz frequency peaks
+    def prefilter(self, data, n=0):
+        return filters[n][2].filter(filters[n][1].filter(filters[n][0].filter(data)))
     
 
-    # Moving average filter - averages over a given window size
-    def moving_average(self, data):
+    # Moving average filter - averages over the window size, returns the average
+    def moving_average(self, data, n=0):
+        # Get the correct sample list
+        sample_list = self.sample_lists[n]
 
         # take care of the sample list
-        if len(self.sample_list) < self.window_size:
-            self.sample_list.append(data)
+        if len(sample_list) < self.window_size:
+            sample_list.append(data)
         else:
-            # Add the new sample value to the beginning of the list
-            self.sample_list.insert(0, data)
-            # Remove last sample of the list
-            self.sample_list.pop()
+            sample_list.insert(0, data) # Add the new sample value to the beginning of the list
+            sample_list.pop()           # Remove last sample of the list
         
         # the FILTERING IS BELOW HERE
-        cumulative_sum = sum(self.sample_list)
-        return cumulative_sum / len(self.sample_list) / self.normalization_factor # return the average divided by the normalization factor
+        cumulative_sum = sum(sample_list)
+        return cumulative_sum / len(sample_list) / self.normalization_factor # return the average divided by the normalization factor (max emg signal during calibration)
     
     
+    # Function called within the SENSOR STATE UPDATE()
     def filtered_emg(self): #return the current filtered value and takes the absolute value 
-        
-        # TODO: revamp this code - we cannot use one filter instance for all three signals
-        # for i, emg in enumerate(emgs):
-        #     self.emg_sensor_value[i] = abs(BP_gain * BP_filter.filter(emgs[i].read())) # returns filtered signal by applying filter function from Biquad class and takes the absolute value
-        #     pc.set(i, self.emg_sensor_value[i])
+
+        for i, emg in enumerate(emgs):
+            femg = abs(self.prefilter(emg.read(), i))
+            femg_avg = self.moving_average(femg, i)
+            pc.set(i, femg_avg)
+            self.emg_sensor_value[i] = femg_avg
 
         # Mikelis's filter design - tested on the 0th EMG analog readout
-        pc.set(0, emg0.read())              # Raw EMG signal at Ch0
-        femg0 = self.prefilter(emg0.read())
-        femg0 = abs(femg0)
-        pc.set(1, femg0)                    # Filtered EMG signal at Ch1
-        femg0_avg = self.moving_average(femg0)
-        pc.set(2, femg0_avg)                # Filtered MA EMG signal at Ch2
+        # emg0 = AnalogIn('A0')
+        # pc.set(0, emg0.read())              # Raw EMG signal at Ch0
+        # femg0 = self.prefilter(emg0.read(), 0)
+        # femg0 = abs(femg0)
+        # pc.set(1, femg0)                    # Filtered EMG signal at Ch1
+        # femg0_avg = self.moving_average(femg0, 0)
+        # pc.set(2, femg0_avg)                # Filtered MA EMG signal at Ch2
 
         pc.send()
-        return femg0_avg    # TODO: the ouput is set to 0 for now, this should be updated later on
+        return self.emg_sensor_value
+    
+
+    # Function called within the exit action of CALIBRATE state function
+    def set_calibration_coefficient(self, coef):
+        self.normalization_factor = coef
+        return

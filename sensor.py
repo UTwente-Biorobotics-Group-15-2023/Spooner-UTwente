@@ -36,7 +36,6 @@ class SensorState(object): # this class keeps track of sensor data
         return
     
     def update(self):
-
         ## Blue switch
         self.switch_value = self.blue_switch.value()
 
@@ -57,7 +56,11 @@ class SensorState(object): # this class keeps track of sensor data
         self.angle_motor_1 = self.encoder_motor_1.get_angle()
         self.angle_motor_2_previous = self.angle_motor_2
         self.angle_motor_2 = self.encoder_motor_2.get_angle()
-
+        
         self.angular_velocity_1 = self.encoder_motor_1.get_angular_velocity(self.angle_motor_1, self.angle_motor_1_previous)
         self.angular_velocity_2 = self.encoder_motor_2.get_angular_velocity(self.angle_motor_1, self.angle_motor_1_previous)
+        return
+    
+    def set_calibration_coefficient(self, coef):
+        self.emg_sensor.set_calibration_coefficient(coef)
         return
