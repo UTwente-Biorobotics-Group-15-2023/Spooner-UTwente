@@ -118,7 +118,7 @@ class StateFunctions(object):
         emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's 0 to 1
         emg0 *= -0.85                                         # motor safety factor - let's not use mre than 0.6 of max power
         print(emg0)
-        self.motor_1.write(emg0)
+        # self.motor_1.write(emg0)  # TODO: uncomment for the motor to move
 
         # Compensation controller (motor 1)
         # self.angle_previous_1 = self.angle_current_1
