@@ -5,8 +5,7 @@ from encoderstats import EncoderStats
 
 class SensorState(object): # this class keeps track of sensor data
 
-    def __init__(self):
-
+    def __init__(self, ticker_frequency):
         ## Serial PC
 
         ## Blue switch
@@ -28,10 +27,12 @@ class SensorState(object): # this class keeps track of sensor data
         self.potmeter_value = [0, 0] #potmeter value with [pot1, pot2]
 
         ## Encoder
-        self.encoder_motor_1 = EncoderStats(1)
-        self.encoder_motor_2 = EncoderStats(2)
+        self.encoder_motor_1 = EncoderStats(1, ticker_frequency)
+        self.encoder_motor_2 = EncoderStats(2, ticker_frequency)
         self.angle_motor_1 = 0
         self.angle_motor_2 = 0
+        self.angle_motor_1_previous = 0
+        self.angle_motor_2_previous = 0
         return
     
     def update(self):
@@ -52,6 +53,11 @@ class SensorState(object): # this class keeps track of sensor data
         # average!) in vector form with [value emg1, value emg2, value emg3]
         
         ## Encoder
+        self.angle_motor_1_previous = self.angle_motor_1
         self.angle_motor_1 = self.encoder_motor_1.get_angle()
+        self.angle_motor_2_previous = self.angle_motor_2
         self.angle_motor_2 = self.encoder_motor_2.get_angle()
+
+        self.angular_velocity_1 = self.encoder_motor_1.get_angular_velocity(self.angle_motor_1, self.angle_motor_1_previous)
+        self.angular_velocity_2 = self.encoder_motor_2.get_angular_velocity(self.angle_motor_1, self.angle_motor_1_previous)
         return
