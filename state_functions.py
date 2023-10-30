@@ -90,11 +90,6 @@ class StateFunctions(object):
             print('press BlueSwitch for EMERGENCY state')
         ## Main action
 
-        # Turn on M1 at low speed until ks is reached
-        self.motor_1.write(-0.8)
-        # Turn on M2 at low speed until ks is reached
-        self.motor_2.write(0.7)
-
         ## Exit guards
         if self.sensor_state.switch_value == 1:
             print("!! emergency !!")
