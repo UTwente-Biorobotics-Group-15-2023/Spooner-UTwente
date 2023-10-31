@@ -54,13 +54,17 @@ class StateFunctions(object):
             print('Please CONTRACT YOUR MUSCLES as hard as you can')
             self.robot_state.set(State.CALLIBRATE)
 
+
+        #TODO: fix the calibration, throws errors
         ## Main action
         # self.max_emg_pre_calibration = max([self.max_emg_pre_calibration, self.sensor_state.emg_value])
         # self.calibration_timer += 1
 
-        self.calibration_timer += 1
-        if self.calibration_timer > self.frequency * 2: # wait two seconds, then start collecting emg data
-            self.calibration_sum += self.sensor_state.emg_value
+        #self.calibration_timer += 1
+        #if self.calibration_timer > self.frequency * 2: # wait two seconds, then start collecting emg data
+            #self.calibration_sum += self.sensor_state.emg_value
+
+        self.robot_state.set(State.HOME)
 
         ## Exit guards
         if self.calibration_timer >= self.frequency * self.calibration_time:
@@ -82,7 +86,7 @@ class StateFunctions(object):
 
 
         # Turn on M1 at low speed until ks is reached
-        self.motor_1.write(-0.8)
+        self.motor_1.write(-0.9)
         if self.sensor_state.ks_one_value == 0:
             self.motor_1.write(0)
         # Turn on M2 at low speed until ks is reached
@@ -99,6 +103,8 @@ class StateFunctions(object):
 
         if self.sensor_state.ks_one_value == 0 and self.sensor_state.ks_two_value == 0:
             print("ROBOT REACHED HOME POSITION")
+            self.sensor_state.encoder_motor_1.set_angle(356)
+            self.sensor_state.encoder_motor_2.set_angle(81)
             self.robot_state.set(State.HOLD)
         return
 
@@ -133,10 +139,10 @@ class StateFunctions(object):
         ## Main action
 
         # TODO: map the emg_value to pwm signal and send to the motors!
-        emg0 = self.sensor_state.emg_value[0]                 # hopefully 0 to 1
-        emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's 0 to 1
-        emg0 *= -0.85                                         # motor safety factor - let's not use mre than 0.6 of max power
-        print(emg0)
+        #emg0 = self.sensor_state.emg_value[0]                 # hopefully 0 to 1
+        #emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's 0 to 1
+        #emg0 *= -0.85                                         # motor safety factor - let's not use mre than 0.6 of max power
+        #print(emg0)
         # self.motor_1.write(emg0)  # TODO: uncomment for the motor to move
 
         # Compensation controller (motor 1)
@@ -144,10 +150,10 @@ class StateFunctions(object):
         #self.c2 = 0
         #self.c3 = 6
 
-        self.compensation_controller.change_coefficient(self.sensor_state.potmeter_value)
-        print(self.compensation_controller.c2)
-        self.compensated_PWM_value = self.compensation_controller.calculate_u(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_1_previous)
-        self.motor_1.write(self.compensated_PWM_value)
+        #self.compensation_controller.change_coefficient(self.sensor_state.potmeter_value)
+        #print(self.compensation_controller.c2)
+        #self.compensated_PWM_value = self.compensation_controller.calculate_u(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_1_previous)
+        #self.motor_1.write(self.compensated_PWM_value)
         # self.angle_previous_1 = self.angle_current_1
         # self.angle_current_1 = self.sensor_state.angle_motor_1
         # self.compensated_PWM_value = self.compensation_controller.calculate_u(self.angle_current_1, self.angle_previous_1)

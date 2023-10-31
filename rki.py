@@ -1,4 +1,4 @@
-import numpy as np
+from ulab import numpy as np
 from diff_geom import tilde, Adjoint, inverseH, expT
 
 ## Robot variables
