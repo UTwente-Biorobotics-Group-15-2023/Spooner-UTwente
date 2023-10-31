@@ -40,7 +40,7 @@ class EmgSensor(object):
 
     def __init__(self):
         self.sample_lists = [[], [], []]
-        self.normalization_factor = 1 # we determine this during calibration step, stronger person -> larger factor, begins at 1, then set to max emg value recorded during calibration step
+        self.normalization_factors = [1, 1, 1] # we determine this during calibration step, stronger person -> larger factor, begins at 1, then set to max emg value recorded during calibration step
         self.window_size = 80
         self.emg_sensor_value = [0, 0, 0] # initial value of EMG [sensor 1, sensor 2, sensor 3]
         return
@@ -53,8 +53,9 @@ class EmgSensor(object):
 
     # Moving average filter - averages over the window size, returns the average
     def moving_average(self, data, n=0):
-        # Get the correct sample list
+        # Get the correct sample list and normalization factor
         sample_list = self.sample_lists[n]
+        normalization_factor = self.normalization_factors[n]
 
         # take care of the sample list
         if len(sample_list) < self.window_size:
@@ -65,7 +66,7 @@ class EmgSensor(object):
         
         # the FILTERING IS BELOW HERE
         cumulative_sum = sum(sample_list)
-        return cumulative_sum / len(sample_list) / self.normalization_factor # return the average divided by the normalization factor (max emg signal during calibration)
+        return cumulative_sum / len(sample_list) / normalization_factor # return the average divided by the normalization factor (max emg signal during calibration)
     
     
     # Function called within the SENSOR STATE UPDATE()
@@ -91,6 +92,6 @@ class EmgSensor(object):
     
 
     # Function called within the exit action of CALIBRATE state function
-    def set_calibration_coefficient(self, coef):
-        self.normalization_factor = coef
+    def set_calibration_coefficients(self, coef0, coef1, coef2):
+        self.normalization_factors = [coef0, coef1, coef2]
         return

@@ -1,18 +1,18 @@
-import numpy as np
+from ulab import numpy as np
 from diff_geom import tilde, Adjoint, inverseH, expT
 
 ## Robot variables
 L1 = 0.3
 L2 = 0.3
 
-#Unit twist for reference position (brocket)
-T1 = np.array([1,0,0], dtype=float)
-T2 = np.array([1,L1,0], dtype=float)
+# Unit twist for reference position (brocket) used in get_H
+T1 = np.array([1,0,0])
+T2 = np.array([1,L1,0])
 
-#He0 for q=0
+# He0 for q=0, used in get_H
 He00 = np.eye(3)
-He00[0,2] = 0       # x
-He00[1,2] = L1+L2   # y
+He00[0,2] = 0       # origin x
+He00[1,2] = L1+L2   # origin y
 
 # control parameters
 Kv = 7
@@ -26,14 +26,15 @@ class Kinematics(object):
     
     def get_q(self, motor_angle_1, motor_angle_2):
         """
-        =INPUT= motor_angle_1, motor_angle_2 input the angle obtained from the motor encoders
+        =INPUT= motor_angle_1, motor_angle_2 input the angle obtained from the motor encoders (rad)
 
-        =OUTPUT= get the angle for the virtual robot arm q1, q2
+        =OUTPUT= get the angle for the virtual robot arm q1, q2 (rad)
         """
         q1 = motor_angle_1
-        q2 = 90 + motor_angle_2 - motor_angle_1 # minus might change into plus depending on the reference configuration
+        q2 = 1/4*np.pi + motor_angle_2 - motor_angle_1 # minus might change into plus depending on the reference configuration
         return q1, q2
     
+    # Forward kinematics
     def get_H(self, q1, q2): # get the H matrix of EE to 0
 
         T1 = tilde(T1) #Turn twist into tilde/matrix form
@@ -53,32 +54,34 @@ class Kinematics(object):
         J = np.zeros((3,2))
         J[:,0] = np.array([1,0,0], dtype = float)
         J[:,1] = np.array([1,L1*np.cos(q1),-(-L1*np.sin(q1))], dtype = float)        
-        return
+        return J
     
-    def get_qdot(self, motor_angle_1, motor_angle_2, set_point): 
+    def get_qdot(self, motor_angle_1, motor_angle_2, v): 
         """
         =INPUT= motor_angle_1, motor_angle_2 are the motor angles measured, They are converted to the angles of the "virtual" joint
         =OUTPUT= gives the required angular velocity for the joints 
         """
-        
-        q1 = self.get_q(motor_angle_1, motor_angle_2)[0]
-        q2 = self.get_q(motor_angle_1, motor_angle_2)[1]
 
-        He0 = self.get_H(q1, q2) #calculate the H EE to 0 matrix
-        J = self.get_J(q1) #calculate the modified / reduced Jacobian
+        q1, q2 = self.get_q(motor_angle_1, motor_angle_2)
 
-        pe0 = He0[:2,2] #calculate the position of the EE
+
+        He0 = self.get_H(q1, q2) # calculate the H EE to 0 matrix
+        J = self.get_J(q1) # calculate the modified / reduced Jacobian
+
+        pe0 = He0[:2,2] # grab the position of the EE from the H matrix
 
         ## Modified Jacobian method
-        v = Kv * (set_point - pe0)
-        v[v>vmax] = vmax
-        v[v<-vmax] = -vmax    
+        # v = Kv * (set_point - pe0)
+        # v[v>vmax] = vmax
+        # v[v<-vmax] = -vmax
+
+        v = vmax * v
 
         H0f = np.eye(3)
-        H0f[:2,2] = -pe0 #calculate H 0 to f (frame f is attached to EE frame )
+        H0f[:2,2] = -pe0 # calculate H 0 to f (frame f is attached to EE frame, but differs in that it is non rotating, always level wrt ground )
 
         Jp = Adjoint(H0f) @ J
-        Jpp = Jp[1:,:]
+        Jpp = Jp[1:,:]  # taking out the row corresponding to the rotations
 
         try:
             Jppinv = np.linalg.inv(Jpp)
