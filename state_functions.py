@@ -102,11 +102,11 @@ class StateFunctions(object):
         ## Main action
 
         # Turn on M1 at low speed until ks is reached
-        self.motor_1.write(-0.9)
+        self.motor_1.write(0)
         if self.sensor_state.ks_one_value == 0:
             self.motor_1.write(0)
         # Turn on M2 at low speed until ks is reached
-        self.motor_2.write(-0.7)
+        self.motor_2.write(0)
         if self.sensor_state.ks_two_value == 0:
             self.motor_2.write(0)
 
@@ -170,7 +170,11 @@ class StateFunctions(object):
         print("IN MOVE STATE")
         
         ## Make moter turn
-        self.motor_1.write(1)
+        self.motor_2.write(1)
+        print(self.sensor_state.angular_velocity_2)
+        print(self.sensor_state.angle_motor_2_previous * 180 / np.pi)
+        print(self.sensor_state.angle_motor_2 * 180 / np.pi) 
+        
      
         ## Exit guards
         if self.sensor_state.switch_value == 1:

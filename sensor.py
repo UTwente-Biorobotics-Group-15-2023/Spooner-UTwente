@@ -61,7 +61,7 @@ class SensorState(object): # this class keeps track of sensor data
         self.angle_motor_2 = self.encoder_motor_2.get_angle()
         
         self.angular_velocity_1 = self.encoder_motor_1.get_angular_velocity(self.angle_motor_1, self.angle_motor_1_previous)
-        self.angular_velocity_2 = self.encoder_motor_2.get_angular_velocity(self.angle_motor_1, self.angle_motor_1_previous)
+        self.angular_velocity_2 = self.encoder_motor_2.get_angular_velocity(self.angle_motor_2, self.angle_motor_2_previous)
         pc.set(0, self.angular_velocity_1)
         pc.set(1, self.angular_velocity_2)
         pc.send()
