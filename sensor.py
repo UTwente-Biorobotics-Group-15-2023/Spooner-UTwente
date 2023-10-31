@@ -4,7 +4,7 @@ from potmeter import PotMeter
 from encoderstats import EncoderStats
 
 class SensorState(object): # this class keeps track of sensor data
-
+  
     def __init__(self, ticker_frequency):
         ## Serial PC
 
@@ -61,6 +61,6 @@ class SensorState(object): # this class keeps track of sensor data
         self.angular_velocity_2 = self.encoder_motor_2.get_angular_velocity(self.angle_motor_1, self.angle_motor_1_previous)
         return
     
-    def set_calibration_coefficient(self, coef):
-        self.emg_sensor.set_calibration_coefficient(coef)
+    def set_calibration_coefficients(self, coef0, coef1, coef2):
+        self.emg_sensor.set_calibration_coefficients(coef0, coef1, coef2)
         return
