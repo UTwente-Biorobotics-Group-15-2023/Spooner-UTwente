@@ -5,7 +5,6 @@ from rki import Kinematics
 from pid import PID
 from ulab import numpy as np
 from encoderstats import EncoderStats 
-
 # we have desired ee velocity that is mapped from from the EMG signal
 # we do the kinematics to get the desired joint velocity
 # we map the desired joint velocity to the motor pwm and input it
@@ -169,85 +168,10 @@ class StateFunctions(object):
 
         ## Main action
         print("IN MOVE STATE")
-        # Show the motor angles
-        print("Motor 1 angle: ", self.sensor_state.angle_motor_1)
-        print("Motor 2 angle: ", self.sensor_state.angle_motor_2)
-
-        # gets the 0th emg signal and costrains it to the range 0 to 1
-        emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of the range 0 to 1
-        emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
-        #print(emg0)
-
-        # We get the desired joint velocities (setpoint) from the EMG signal, for now only used for controlling y-axis
-        # qdot_sp = Kinematics.get_qdot(self, self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, (0, 0.5))
-
-        # Get m1dot_sp and m2dot_sp from the qdot_sp (go from joint to motor velocities)
-        # q2 = 1/4*np.pi + ma2 - ma1
-        # q1 = ma1 =>> ma2 = q2 + q1 - 1/4*np.pi
-        # dma2 = dq2 + dq1
-        # m1dot_sp = qdot_sp[0]
-        # m2dot_sp = qdot_sp[0] + qdot_sp[1]
-        # m1dot = self.m1_previous - self.sensor_state.angle_motor_1 * self.frequency
-        # m2dot = self.m2_previous - self.sensor_state.angle_motor_2 * self.frequency
-
         
-        # TODO: here the controller has to do its part
-        # > measure the real m1dot, m2dot and compare to the m1dot_sp and m2dot_sp
-        # > get the difference (error)
-        # > use the error in PID controller to output pwm signal to the motors (0 to 1)
-        # > cap the pwm signal to 0.8 (motor safety factor)
-
-        # implementation of controller
-        # reference1 = m1dot 
-        # measured1 = self.sensor_state.angular_velocity #still needs to be made in the sensor.py file but not done bc of potential merge conflicts
-        # reference1 = m2dot 
-        # measured2 = self.sensor_state.angular_velocity #still needs to be made in the sensor.py file but not done bc of potential merge conflicts
-        # self.pid_m1.step(reference1, measured1)
-        # self.pid_m1.step(reference2, measured2)
-        # self.pid_m1.step()
-
-        # self.motor_1.write()
-        # self.motor_2.write()
-        
-
-        # TODO: check plus and minus definitions of pwm and m - the below are educated guesses
-        # for motor one - negative pwm makes it move in positive m direction
-        # for motor two - negative pwm makes it move in negative m direction
-
-        # older test code
-        # emg0 *= -0.8             # motor safety factor - let's not use more than 0.8 of max power
-        # TODO: map the emg_value to pwm signal and send to the motors!
-        #emg0 = self.sensor_state.emg_value[0]                 # hopefully 0 to 1
-        #emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's 0 to 1
-        #emg0 *= -0.85                                         # motor safety factor - let's not use mre than 0.6 of max power
-        #print(emg0)
-        # self.motor_1.write(emg0)  # TODO: uncomment for the motor to move
-
-        # Compensation controller (motor 1)
-        #self.c1 = 0.05
-        #self.c2 = 0
-        #self.c3 = 6
-
-        #self.compensation_controller.change_coefficient(self.sensor_state.potmeter_value)
-        #print(self.compensation_controller.c2)
-        #self.compensated_PWM_value = self.compensation_controller.calculate_u(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_1_previous)
-        #self.motor_1.write(self.compensated_PWM_value)
-        # self.angle_previous_1 = self.angle_current_1
-        # self.angle_current_1 = self.sensor_state.angle_motor_1
-        # self.compensated_PWM_value = self.compensation_controller.calculate_u(self.angle_current_1, self.angle_previous_1)
-        # print(self.compensated_PWM_value)
-        # self.motor_1.write(self.compensated_PWM_value)
-
-        ## IMPORTANT: leave this code as last in the main action
-        self.m1_previous = self.sensor_state.angle_motor_1 
-        self.m2_previous = self.sensor_state.angle_motor_2
-      
-        #self.time = self.n * self.ticker_period
-        #self.pwm_value = 0.6 * np.sin(self.sin_step*self.n)
-        #self.motor_1.write(self.pwm_value)
-        #print(self.pwm_value)
-        #self.n += 1
-
+        ## Make moter turn
+        self.motor_1.write(1)
+     
         ## Exit guards
         if self.sensor_state.switch_value == 1:
             self.robot_state.set(State.EMERGENCY_STOP)

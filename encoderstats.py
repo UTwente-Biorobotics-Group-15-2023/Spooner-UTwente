@@ -1,7 +1,6 @@
-from biorobotics import Encoder
+from biorobotics import Encoder, AnalogIn, SerialPC
 from pin_definitions import Pins
 from ulab import numpy as np
-
 
 class EncoderStats(object):
     def __init__(self, selected_motor, ticker_frequency):
@@ -37,6 +36,7 @@ class EncoderStats(object):
     def set_angle(self, angle):
         self.encoder.set_counter(round(angle * 8400/360))
         return
+    
     def get_angular_velocity(self, angle_current, angle_previous):
         self.angular_velocity = (angle_current - angle_previous) / self.period
         return self.angular_velocity
