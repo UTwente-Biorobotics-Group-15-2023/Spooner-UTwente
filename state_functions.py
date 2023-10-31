@@ -6,10 +6,6 @@ from pid import PID
 from ulab import numpy as np
 from encoderstats import EncoderStats 
 
-# we have desired ee velocity that is mapped from from the EMG signal
-# we do the kinematics to get the desired joint velocity
-# we map the desired joint velocity to the motor pwm and input it
-
 class StateFunctions(object):
 
     def __init__(self, robot_state, sensor_state, ticker_frequency):
@@ -67,15 +63,10 @@ class StateFunctions(object):
         if self.robot_state.is_changed():
             ## Entry action
             print('Lets CALIBRATE the EMG input!')
-            print('Please CONTRACT YOUR MUSCLES as hard as you can')
+            print('CONTRACT YOUR MUSCLES as hard as you can')
             self.robot_state.set(State.CALLIBRATE)
 
-
-        #TODO: fix the calibration, throws errors
         ## Main action
-        # self.max_emg_pre_calibration = max([self.max_emg_pre_calibration, self.sensor_state.emg_value])
-        # self.calibration_timer += 1
-
         self.calibration_timer += 1
         if self.calibration_timer > self.frequency * 2: # wait two seconds, then start collecting emg data
             self.calibration_sum_0 += self.sensor_state.emg_value[0]
@@ -85,11 +76,11 @@ class StateFunctions(object):
         ## Exit guards
         if self.calibration_timer >= self.frequency * self.calibration_time:
             self.calibration_timer = 0
-            print("CALIBRATION COMPLETE!")
             coef0 = self.calibration_sum_0/(self.frequency * (self.calibration_time-2))
             coef1 = self.calibration_sum_1/(self.frequency * (self.calibration_time-2))
             coef2 = self.calibration_sum_2/(self.frequency * (self.calibration_time-2))
             self.sensor_state.set_calibration_coefficients(coef0, coef1, coef2)
+            print("CALIBRATION COMPLETE!")
             self.robot_state.set(State.HOME)
         return
 
@@ -98,41 +89,28 @@ class StateFunctions(object):
         if self.robot_state.is_changed():
             ## Entry action
             self.robot_state.set(State.HOME)
-            print("Move the robot to its home state to continue")
-            print('press BlueSwitch for EMERGENCY state')
+            print('Robot moving to HOME STATE.\nYou can always press the BlueSwitch for EMERGENCY STOP')
+        
         ## Main action
-
-        # Turn on M1 at low speed until ks is reached
-        self.motor_1.write(-0.9)
+        self.motor_1.write(-0.82) # Turn on M1 at low speed until ks is reached
         if self.sensor_state.ks_one_value == 0:
             self.motor_1.write(0)
-        # Turn on M2 at low speed until ks is reached
-        self.motor_2.write(-0.7)
+        self.motor_2.write(-0.70) # Turn on M2 at low speed until ks is reached
         if self.sensor_state.ks_two_value == 0:
             self.motor_2.write(0)
 
         ## Exit guards
         if self.sensor_state.switch_value == 1:
-            print("!! emergency !!")
-            self.motor_1.write(0)
-            self.motor_2.write(0)
             self.robot_state.set(State.EMERGENCY_STOP)
 
         if self.sensor_state.ks_one_value == 0 and self.sensor_state.ks_two_value == 0:
             self.motor_1.write(0)
             self.motor_2.write(0)
             print("ROBOT REACHED HOME POSITION")
-            
-            #from feature/linear-movement-test
-            # the home state angles might be somewhat off, needs to be checked
-            # m1 = -6 * np.pi/180
-            # q2 = 1/4*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/4*np.pi
-            # m2 = 83 * np.pi/180 + m1 - 1/4*np.pi # will equal -13 at home state
-            # self.sensor_state.encoder_motor_1.set_home_angle(m1)
-            # self.sensor_state.encoder_motor_2.set_home_angle(m2)
-            
-            self.sensor_state.encoder_motor_1.set_angle(356)
-            self.sensor_state.encoder_motor_2.set_angle(81)
+            m1 = (360-6) * np.pi/180
+            m2 = (360-13) * np.pi/180 # q2 = 1/4*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/4*np.pi => will equal -13deg at home state
+            self.sensor_state.encoder_motor_1.set_angle(m1)
+            self.sensor_state.encoder_motor_2.set_angle(m2)
             self.robot_state.set(State.HOLD)
         return
 
@@ -142,14 +120,14 @@ class StateFunctions(object):
             ## Entry action
             self.robot_state.set(State.HOLD)
             print("ENTERED HOLD STATE")
+            # Show the motor angles
+            print("Motor 1 angle: ", self.sensor_state.angle_motor_1)
+            print("Motor 2 angle: ", self.sensor_state.angle_motor_2)
 
         ## Main action
         # Kill the motors
         self.motor_1.write(0)
         self.motor_2.write(0)
-        # Show the motor angles
-        print("Motor 1 angle: ", self.sensor_state.angle_motor_1)
-        print("Motor 2 angle: ", self.sensor_state.angle_motor_2)
 
         ## Exit guards
         if self.sensor_state.switch_value == 1:
@@ -173,13 +151,18 @@ class StateFunctions(object):
         print("Motor 1 angle: ", self.sensor_state.angle_motor_1)
         print("Motor 2 angle: ", self.sensor_state.angle_motor_2)
 
-        # gets the 0th emg signal and costrains it to the range 0 to 1
+        # HOW THE BELOW CODE WORKS:
+        # • we have desired ee velocity that is mapped from from the EMG signal
+        # • we do the kinematics to get the desired joint velocity
+        # • we map the desired joint velocity to the motor pwm and input it
+
+        # get the 0th emg signal and costrain it to range 0 to 1
         emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of the range 0 to 1
         emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
-        #print(emg0)
+        print(emg0)
 
-        # We get the desired joint velocities (setpoint) from the EMG signal, for now only used for controlling y-axis
-        # qdot_sp = Kinematics.get_qdot(self, self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, (0, 0.5))
+        # Get the desired joint velocities (setpoint) from the EMG, for now only used for controlling y-axis
+        # qdot_sp = Kinematics.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, (0, emg0))
 
         # Get m1dot_sp and m2dot_sp from the qdot_sp (go from joint to motor velocities)
         # q2 = 1/4*np.pi + ma2 - ma1
@@ -251,6 +234,7 @@ class StateFunctions(object):
         ## Exit guards
         if self.sensor_state.switch_value == 1:
             self.robot_state.set(State.EMERGENCY_STOP)
+
         #TODO: For now switching states only if any of the kill switches pressed, create an additional HOLD signal for future use
         elif self.sensor_state.ks_one_value == 0 or self.sensor_state.ks_two_value == 0:
             self.robot_state.set(State.HOLD)
