@@ -4,6 +4,7 @@ from compensation_controller import CompensationController
 from rki import Kinematics
 from pid import PID
 from ulab import numpy as np
+from encoderstats import EncoderStats 
 
 # we have desired ee velocity that is mapped from from the EMG signal
 # we do the kinematics to get the desired joint velocity
@@ -39,6 +40,7 @@ class StateFunctions(object):
         ## Motors
         self.motor_1 = Motor(ticker_frequency, 1)
         self.motor_2 = Motor(ticker_frequency, 2)
+
 
         ## Callback states
         self.callbacks = {
@@ -163,12 +165,25 @@ class StateFunctions(object):
         # m1dot = self.m1_previous - self.sensor_state.angle_motor_1 * self.frequency
         # m2dot = self.m2_previous - self.sensor_state.angle_motor_2 * self.frequency
 
-
+        
         # TODO: here the controller has to do its part
         # > measure the real m1dot, m2dot and compare to the m1dot_sp and m2dot_sp
         # > get the difference (error)
         # > use the error in PID controller to output pwm signal to the motors (0 to 1)
         # > cap the pwm signal to 0.8 (motor safety factor)
+
+        # implementation of controller
+        # reference1 = m1dot 
+        # measured1 = self.sensor_state.angular_velocity #still needs to be made in the sensor.py file but not done bc of potential merge conflicts
+        # reference1 = m2dot 
+        # measured2 = self.sensor_state.angular_velocity #still needs to be made in the sensor.py file but not done bc of potential merge conflicts
+        # self.pid_m1.step(reference1, measured1)
+        # self.pid_m1.step(reference2, measured2)
+        # self.pid_m1.step()
+
+        # self.motor_1.write()
+        # self.motor_2.write()
+        
 
         # TODO: check plus and minus definitions of pwm and m - the below are educated guesses
         # for motor one - negative pwm makes it move in positive m direction

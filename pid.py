@@ -21,6 +21,10 @@ class PID(object):
     
     def step(self, reference, measured, filtfun=None): # calculates the output of the PID for 1 step
         
+        '''
+        =INPUT= input is the reference and the measured signal that needs to be controlled
+        =OUTPUT= output is 1 step of the PID controller 
+        '''
         current_error = reference - measured
         self.integrated_error += current_error * self.t_step #calculate the integrated error previous + current
         error_change = (current_error - self.error) / self.t_step #calculate the change in error 
