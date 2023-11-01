@@ -18,8 +18,7 @@ He00[1,2] = L1+L2   # origin y
 Kv = 7
 vmax = 10
 
-
-def get_q(motor_angle_1, motor_angle_2):
+def get_joint_angle(motor_angle_1, motor_angle_2):
     """
     =INPUT= motor_angle_1, motor_angle_2 input the angle obtained from the motor encoders (rad)
 
@@ -35,7 +34,7 @@ def get_H(q1, q2): # get the H matrix of EE to 0
     T1_t = tilde(T1) #Turn twist into tilde/matrix form
     T2_t = tilde(T2) #Turn twist into tilde/matrix form
 
-    H = np.dot(np.dot(expT(T1_t*q[0]), expT(T2_t*q[1])) , He00)
+    H = np.dot(np.dot(expT(T1_t*q1), expT(T2_t*q2)) , He00)
     return H
 
 def get_J(q1): # Calculate the Jacobian using the modified jacobien method
@@ -48,13 +47,13 @@ def get_J(q1): # Calculate the Jacobian using the modified jacobien method
     J[:,1] = np.array([1,L1*np.cos(q1),-(-L1*np.sin(q1))])        
     return J
 
-def get_qdot(motor_angle_1, motor_angle_2, v): 
+def get_qdot(motor_angle_1, motor_angle_2, v, ticker_frequency): 
     """
     =INPUT= motor_angle_1, motor_angle_2 are the motor angles measured, They are converted to the angles of the "virtual" joint
     =OUTPUT= gives the required angular velocity for the joints 
     """
 
-    q1, q2 = get_q(motor_angle_1, motor_angle_2)
+    q1, q2 = get_joint_angle(motor_angle_1, motor_angle_2)
 
 
     He0 = get_H(q1, q2) # calculate the H EE to 0 matrix
@@ -85,12 +84,6 @@ def get_qdot(motor_angle_1, motor_angle_2, v):
 
     qdot = np.dot(Jppinv, v)
 
-    ## Calculate the angle using euler integration
-    # if dt > 0.2:
-    #     # limit to 200 ms: if more time passed, we would get massively unstable behaviour
-    #     # (this sometimes happens for the first timestep)
-    #     dt = 0.2
-    # qs += dq * dt  
     return qdot
     
     

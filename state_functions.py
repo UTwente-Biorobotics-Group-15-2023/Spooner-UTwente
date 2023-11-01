@@ -6,6 +6,10 @@ from pid import PID
 from ulab import numpy as np
 from encoderstats import EncoderStats 
 
+# Home state motor angles. Global since always constant
+m1 = (360-6) * np.pi/180
+m2 = (360-13) * np.pi/180 # q2 = 1/4*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/4*np.pi => will equal -13deg at home state
+
 class StateFunctions(object):
 
     def __init__(self, robot_state, sensor_state, ticker_frequency):
@@ -13,11 +17,12 @@ class StateFunctions(object):
         self.robot_state = robot_state
         self.sensor_state = sensor_state
         self.frequency = ticker_frequency
+        
 
         # EMG calibration
         self.max_emg_pre_calibration = 0
         self.calibration_timer = 0
-        self.calibration_time = 10 # in seconds
+        self.calibration_time = 3 # in seconds, min is 3
         self.calibration_sum_0 = 0
         self.calibration_sum_1 = 0
         self.calibration_sum_2 = 0
@@ -36,14 +41,15 @@ class StateFunctions(object):
         self.compensation_controller = CompensationController(ticker_frequency)
 
         ## PID Stuff
-        self.pid_m1 = PID(1/ticker_frequency, 1, 1, 1)
-        self.pid_m2 = PID(1/ticker_frequency, 1, 1, 1)
+        self.pid_m1 = PID(1/ticker_frequency, 20.6897, 114.9425 , 0.9310)
+        self.pid_m2 = PID(1/ticker_frequency, 20.6897, 114.9425 , 0.9310)
         self.m1_previous = 0
         self.m2_previous = 0
 
         ## Motors
         self.motor_1 = Motor(18000, 1)
         self.motor_2 = Motor(18000, 2)
+        self.q0 = np.array([m1, 1/4*np.pi + m2 - m1])
 
 
         ## Callback states
@@ -107,8 +113,6 @@ class StateFunctions(object):
             self.motor_1.write(0)
             self.motor_2.write(0)
             print("ROBOT REACHED HOME POSITION")
-            m1 = (360-6) * np.pi/180
-            m2 = (360-13) * np.pi/180 # q2 = 1/4*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/4*np.pi => will equal -13deg at home state
             self.sensor_state.encoder_motor_1.set_angle(m1)
             self.sensor_state.encoder_motor_2.set_angle(m2)
             self.robot_state.set(State.HOLD)
@@ -149,7 +153,7 @@ class StateFunctions(object):
         print("IN MOVE STATE")
         # Show the motor angles
         print("Motor 1 angle: ", self.sensor_state.angle_motor_1)
-        print("Motor 2 angle: ", self.sensor_state.angle_motor_2)
+        print("Motor 2 angle: ", 1/4*np.pi + self.sensor_state.angle_motor_2 - self.sensor_state.angle_motor_1)
 
         # HOW THE BELOW CODE WORKS:
         # • we have desired ee velocity that is mapped from from the EMG signal
@@ -162,13 +166,25 @@ class StateFunctions(object):
         print(emg0)
 
         # Get the desired joint velocities (setpoint) from the EMG, for now only used for controlling y-axis
-        v = np.array([0,emg0])
-        qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v)
-        print(qdot_sp)
+        v = np.array([0, -0.5])
+        qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
+        
+        q_sp = self.q0 + qdot_sp * 1/self.frequency #euler integration dont go above 200ms, otherwise unstable behaviour
+        print('joint 1 desired: ',q_sp[0])
+        print('joint 2 desired: ',q_sp[1])
 
         # Get m1dot_sp and m2dot_sp from the qdot_sp (go from joint to motor velocities)
         # q2 = 1/4*np.pi + ma2 - ma1
-        # q1 = ma1 =>> ma2 = q2 + q1 - 1/4*np.pi
+        # q1 = ma1 #=>> ma2 = q2 + q1 - 1/4*np.pi
+
+        ma1_sp= q_sp[0]
+        ma2_sp = q_sp[1] + q_sp[0] - 1/4*np.pi
+
+        # pid_out_1 = self.pid_m1.step(ma1_sp, self.sensor_state.angle_motor_1)
+        # pid_out_2 = self.pid_m2.step(ma2_sp, self.sensor_state.angle_motor_2)
+
+
+
         # dma2 = dq2 + dq1
         # m1dot_sp = qdot_sp[0]
         # m2dot_sp = qdot_sp[0] + qdot_sp[1]
