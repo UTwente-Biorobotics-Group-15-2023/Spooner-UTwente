@@ -1,7 +1,7 @@
 from states import State
 from motor import Motor
 from compensation_controller import CompensationController
-from rki import Kinematics
+import rki
 from pid import PID
 from ulab import numpy as np
 from encoderstats import EncoderStats 
@@ -92,10 +92,10 @@ class StateFunctions(object):
             print('Robot moving to HOME STATE.\nYou can always press the BlueSwitch for EMERGENCY STOP')
         
         ## Main action
-        self.motor_1.write(-0.82) # Turn on M1 at low speed until ks is reached
+        self.motor_1.write(-0.60) # Turn on M1 at low speed until ks is reached
         if self.sensor_state.ks_one_value == 0:
             self.motor_1.write(0)
-        self.motor_2.write(-0.70) # Turn on M2 at low speed until ks is reached
+        self.motor_2.write(-0.60) # Turn on M2 at low speed until ks is reached
         if self.sensor_state.ks_two_value == 0:
             self.motor_2.write(0)
 
@@ -162,7 +162,9 @@ class StateFunctions(object):
         print(emg0)
 
         # Get the desired joint velocities (setpoint) from the EMG, for now only used for controlling y-axis
-        # qdot_sp = Kinematics.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, (0, emg0))
+        v = np.array([0,emg0])
+        qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v)
+        print(qdot_sp)
 
         # Get m1dot_sp and m2dot_sp from the qdot_sp (go from joint to motor velocities)
         # q2 = 1/4*np.pi + ma2 - ma1
