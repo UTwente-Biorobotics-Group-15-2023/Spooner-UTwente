@@ -35,12 +35,8 @@ def get_H(q1, q2): # get the H matrix of EE to 0
     T1_t = tilde(T1) #Turn twist into tilde/matrix form
     T2_t = tilde(T2) #Turn twist into tilde/matrix form
 
-    # changed compared to rki simulation so might cause errors
-    He0 = np.dot(expT(T1_t)*q1, expT(T2_t) * q2) # Take the matrix exponential of T1 and T2 and dot prod of e^T1 @ e^T2
-    He0 = np.dot(He0, He00) # Take the dot product of e^T1 @ e^T2 @ H(0) completing the brocket equation
-     
-
-    return He0
+    H = np.dot(np.dot(expT(T1_t*q[0]), expT(T2_t*q[1])) , He00)
+    return H
 
 def get_J(q1): # Calculate the Jacobian using the modified jacobien method
     """
