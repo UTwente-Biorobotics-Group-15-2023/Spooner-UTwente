@@ -33,7 +33,7 @@ filters_2 = [LP_10_low_2, LP_48_52_stop_2, LP_98_102_stop_2]
 filters = [filters_0, filters_1, filters_2]
 
 emgs = [AnalogIn('A0'), AnalogIn('A1'), AnalogIn('A2')]
-pc = SerialPC(3)
+# pc = SerialPC(3)
 
 class EmgSensor(object): 
 
@@ -75,7 +75,7 @@ class EmgSensor(object):
         for i, emg in enumerate(emgs):
             femg = abs(self.prefilter(emg.read(), i))
             femg_avg = self.moving_average(femg, i)
-            pc.set(i, femg_avg)
+            # pc.set(i, femg_avg)
             self.emg_sensor_value[i] = femg_avg
 
         # Mikelis's filter design - tested on the 0th EMG analog readout
@@ -87,7 +87,7 @@ class EmgSensor(object):
         # femg0_avg = self.moving_average(femg0, 0)
         # pc.set(2, femg0_avg)                # Filtered MA EMG signal at Ch2
 
-        pc.send()
+        # pc.send()
         return self.emg_sensor_value
     
 

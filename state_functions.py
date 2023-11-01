@@ -5,11 +5,13 @@ import rki
 from pid import PID
 from ulab import numpy as np
 from encoderstats import EncoderStats 
+from biorobotics import SerialPC
 
 # Home state motor angles. Global since always constant
 m1 = (360-6) * np.pi/180
 m2 = (360-13) * np.pi/180 # q2 = 1/4*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/4*np.pi => will equal -13deg at home state
 
+# pc = SerialPC(2)
 class StateFunctions(object):
 
     def __init__(self, robot_state, sensor_state, ticker_frequency):
@@ -41,8 +43,8 @@ class StateFunctions(object):
         self.compensation_controller = CompensationController(ticker_frequency)
 
         ## PID Stuff
-        self.pid_m1 = PID(1/ticker_frequency, 20.6897, 114.9425 , 0.9310)
-        self.pid_m2 = PID(1/ticker_frequency, 20.6897, 114.9425 , 0.9310)
+        self.pid_m1 = PID(1/ticker_frequency, 20.6897, 114.9425 , 0.931) #kp = 20.6897, ki = 114.9425, kd = 0.9310
+        self.pid_m2 = PID(1/ticker_frequency, 20.6897, 114.9425, 0.9310)
         self.m1_previous = 0
         self.m2_previous = 0
 
@@ -50,6 +52,8 @@ class StateFunctions(object):
         self.motor_1 = Motor(18000, 1)
         self.motor_2 = Motor(18000, 2)
         self.q0 = np.array([m1, 1/4*np.pi + m2 - m1])
+        self.q_sp = np.array([m1, 1/4*np.pi + m2 - m1])
+        self.t = 0
 
 
         ## Callback states
@@ -161,28 +165,45 @@ class StateFunctions(object):
         # • we map the desired joint velocity to the motor pwm and input it
 
         # get the 0th emg signal and costrain it to range 0 to 1
-        emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of the range 0 to 1
-        emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
-        print(emg0)
+        #emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of the range 0 to 1
+        #emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
+        #print(emg0)
 
         # Get the desired joint velocities (setpoint) from the EMG, for now only used for controlling y-axis
-        v = np.array([0, -0.5])
-        qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
+        #v = np.array([0, 0])
+        #qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
         
-        q_sp = self.q0 + qdot_sp * 1/self.frequency #euler integration dont go above 200ms, otherwise unstable behaviour
-        print('joint 1 desired: ',q_sp[0])
-        print('joint 2 desired: ',q_sp[1])
+        #TODO Change vmax so it will go slowly
+        #self.q_sp = self.q_sp + qdot_sp * 1/self.frequency #euler integration dont go above 200ms, otherwise unstable behaviour
+        #print('joint 1 desired: ',self.q_sp[0])
+        #print('joint 2 desired: ',self.q_sp[1])
 
         # Get m1dot_sp and m2dot_sp from the qdot_sp (go from joint to motor velocities)
         # q2 = 1/4*np.pi + ma2 - ma1
         # q1 = ma1 #=>> ma2 = q2 + q1 - 1/4*np.pi
 
-        ma1_sp= q_sp[0]
-        ma2_sp = q_sp[1] + q_sp[0] - 1/4*np.pi
+        #ma1_sp= self.q_sp[0]
+        #ma2_sp = self.q_sp[1] + self.q_sp[0] - 1/4*np.pi
 
         # pid_out_1 = self.pid_m1.step(ma1_sp, self.sensor_state.angle_motor_1)
         # pid_out_2 = self.pid_m2.step(ma2_sp, self.sensor_state.angle_motor_2)
+        
+        #self.t += self.ticker_period
+        pid_out_1 = -self.pid_m1.step(7, self.sensor_state.angle_motor_1) #0.05*np.sin(2*np.pi*0.1*self.t) - np.pi/9
+        # pid_out_2 = self.pid_m2.step(ma2_sp, self.sensor_state.angle_motor_2)
+        #print(self.sensor_state.angle_motor_1)
 
+        # pc.set(0, pid_out_1)
+        # pc.set(1, self.sensor_state.angle_motor_1)
+        # pc.send()
+
+        # limiting the pid output to max absolute val of 0.7
+        if pid_out_1 > 0.7:
+            pid_out_1 = 0.7
+        elif pid_out_1 < -0.7:
+            pid_out_1 = -0.7
+        self.motor_1.write(-pid_out_1)
+        # self.motor_2.write(pid_out_2)
 
 
         # dma2 = dq2 + dq1

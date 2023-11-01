@@ -15,8 +15,8 @@ He00[0,2] = 0       # origin x
 He00[1,2] = L1+L2   # origin y
 
 # control parameters
-Kv = 7
-vmax = 10
+Kv = 0.7
+vmax = 0.05
 
 def get_joint_angle(motor_angle_1, motor_angle_2):
     """

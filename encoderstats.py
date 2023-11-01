@@ -24,9 +24,9 @@ class EncoderStats(object):
         # > m1 should increase the counter when goning counter clockwise, instead it decreases it
         # > m2 works good
         if self.motor == 1:
-            self.counter = - self.encoder.counter() % 8400
+            self.counter = - self.encoder.counter()
         if self.motor == 2:
-            self.counter = self.encoder.counter() % 8400
+            self.counter = self.encoder.counter()
         return self.counter
 
     def get_angle(self):
