@@ -8,8 +8,8 @@ from encoderstats import EncoderStats
 from biorobotics import SerialPC
 
 # Home state motor angles. Global since always constant
-m1 = (360-6) * np.pi/180
-m2 = (360-13) * np.pi/180 # q2 = 1/4*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/4*np.pi => will equal -13deg at home state
+m1 = (-6) * np.pi/180
+m2 = (-13) * np.pi/180 # q2 = 1/4*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/4*np.pi => will equal -13deg at home state
 
 # pc = SerialPC(2)
 class StateFunctions(object):
@@ -189,7 +189,7 @@ class StateFunctions(object):
         # pid_out_2 = self.pid_m2.step(ma2_sp, self.sensor_state.angle_motor_2)
         
         #self.t += self.ticker_period
-        pid_out_1 = -self.pid_m1.step(7, self.sensor_state.angle_motor_1) #0.05*np.sin(2*np.pi*0.1*self.t) - np.pi/9
+        pid_out_1 = -self.pid_m1.step(0.5, self.sensor_state.angle_motor_1) #0.05*np.sin(2*np.pi*0.1*self.t) - np.pi/9
         # pid_out_2 = self.pid_m2.step(ma2_sp, self.sensor_state.angle_motor_2)
         #print(self.sensor_state.angle_motor_1)
 
