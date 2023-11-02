@@ -11,7 +11,7 @@ from biorobotics import SerialPC
 m1 = (-6) * np.pi/180
 m2 = (-13) * np.pi/180 # q2 = 1/4*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/4*np.pi => will equal -13deg at home state
 
-# pc = SerialPC(2)
+pc = SerialPC(2)
 class StateFunctions(object):
 
     def __init__(self, robot_state, sensor_state, ticker_frequency):
@@ -19,7 +19,6 @@ class StateFunctions(object):
         self.robot_state = robot_state
         self.sensor_state = sensor_state
         self.frequency = ticker_frequency
-        
 
         # EMG calibration
         self.max_emg_pre_calibration = 0
@@ -29,33 +28,20 @@ class StateFunctions(object):
         self.calibration_sum_1 = 0
         self.calibration_sum_2 = 0
 
-        #self.T = 4
-
-        #self.ticker_period = 1/ticker_frequency
-        #self.sin_total_steps = self.T/self.ticker_period
-        #self.sin_step = 2*np.pi / self.sin_total_steps
-        #self.time = 0
-        #self.n = 0
-
-        self.ticker_period = 1/ticker_frequency
-        #self.sensor_state.
-
         ## Compensation controller
         self.compensation_controller = CompensationController(ticker_frequency)
 
         ## PID Stuff
-        self.pid_m1 = PID(1/ticker_frequency, 3, 0.01, 1) #kp = 20.6897, ki = 114.9425, kd = 0.9310
-        self.pid_m2 = PID(1/ticker_frequency, 3, 0.01, 1)
+        self.pid_m1 = PID(1/ticker_frequency, 15, 0.01, 1) #kp = 20.6897, ki = 114.9425, kd = 0.9310
+        self.pid_m2 = PID(1/ticker_frequency, 15, 0.01, 1)
         self.m1_previous = 0
         self.m2_previous = 0
 
         ## Motors
         self.motor_1 = Motor(18000, 1)
         self.motor_2 = Motor(18000, 2)
-        self.q0 = np.array([m1, 1/4*np.pi + m2 - m1])
         self.q_sp = np.array([m1, 1/4*np.pi + m2 - m1])
         self.t = 0
-
 
         ## Callback states
         self.callbacks = {
@@ -147,18 +133,26 @@ class StateFunctions(object):
             self.robot_state.set(State.MOVE)
         return
 
+    def get_q_current(self):
+        q1 = self.sensor_state.angle_motor_1
+        q2 = self.sensor_state.angle_motor_2 + q1 - 1/4*np.pi
+        return np.array([q1, q2])
+
     ## State MOVE
     def move(self):
         if self.robot_state.is_changed():
             ## Entry action
             self.robot_state.set(State.MOVE)
+            # RECALIBRATE THE q_sp TO THE CURRENT POSITION before movement
+            q1, q2 = rki.get_joint_angle(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2)
+            self.q_sp = np.array([q1, q2])
             print("MOVE")
 
         ## Main action
-        print("IN MOVE STATE")
+        # print("IN MOVE STATE")
         # Show the motor angles
-        print("Motor 1 angle: ", self.sensor_state.angle_motor_1)
-        print("Motor 2 angle: ", 1/4*np.pi + self.sensor_state.angle_motor_2 - self.sensor_state.angle_motor_1)
+        # print("Motor 1 angle: ", self.sensor_state.angle_motor_1)
+        # print("Motor 2 angle: ", 1/4*np.pi + self.sensor_state.angle_motor_2 - self.sensor_state.angle_motor_1)
 
         # HOW THE BELOW CODE WORKS:
         # • we have desired ee velocity that is mapped from from the EMG signal
@@ -166,42 +160,36 @@ class StateFunctions(object):
         # • we map the desired joint velocity to the motor pwm and input it
 
         # get the 0th emg signal and costrain it to range 0 to 1
-        #emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of the range 0 to 1
-        #emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
-        #print(emg0)
+        # emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of the range 0 to 1
+        # emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
+        # print(emg0)
 
         # Get the desired joint velocities (setpoint) from the EMG, for now only used for controlling y-axis
-        #v = np.array([0, 0])
-        #qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
+        v = np.array([-0.5, 0]) # we want to do 0.5 max speed in x direction
+        qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
         
-        #TODO Change vmax so it will go slowly
-        #self.q_sp = self.q_sp + qdot_sp * 1/self.frequency #euler integration dont go above 200ms, otherwise unstable behaviour
-        #print('joint 1 desired: ',self.q_sp[0])
-        #print('joint 2 desired: ',self.q_sp[1])
+        # TODO: Change vmax so it will go slowly
+        self.t += 1/self.frequency                  # euler integration
+        self.q_sp += qdot_sp * 1/self.frequency     # euler integration
+        print('joint 1 desired: ',self.q_sp[0])
+        print('joint 2 desired: ',self.q_sp[1])
 
-        # Get m1dot_sp and m2dot_sp from the qdot_sp (go from joint to motor velocities)
-        # q2 = 1/4*np.pi + ma2 - ma1
-        # q1 = ma1 #=>> ma2 = q2 + q1 - 1/4*np.pi
+        # Get m1_sp and m2_sp from the q_sp (go from joint to motor angles)
+        m1_sp = self.q_sp[0]
+        m2_sp = self.q_sp[1] + self.q_sp[0] - 1/4*np.pi
 
-        #ma1_sp= self.q_sp[0]
-        #ma2_sp = self.q_sp[1] + self.q_sp[0] - 1/4*np.pi
+        # serial output the angle errors
+        pc.set(0, self.sensor_state.angle_motor_1 - m1_sp)
+        pc.set(1, self.sensor_state.angle_motor_2 - m2_sp)
+        pc.send()
 
-        # pid_out_1 = self.pid_m1.step(ma1_sp, self.sensor_state.angle_motor_1)
-        # pid_out_2 = self.pid_m2.step(ma2_sp, self.sensor_state.angle_motor_2)
+        pid_out_1 = self.pid_m1.step(m1_sp, self.sensor_state.angle_motor_1)
+        pid_out_2 = self.pid_m2.step(m2_sp, self.sensor_state.angle_motor_2)
         
-        self.t += self.ticker_period
-        self.sin_signal = 0.5 + 0.45 * np.sin(1/4 * np.pi * self.t)
-        if self.sin_signal > 0.94:
-            self.signal = 0.95
-        elif self.sin_signal < 0.09:
-            self.signal = 0.05
-        pid_out_1 = self.pid_m1.step(self.signal, self.sensor_state.angle_motor_1) #0.05*np.sin(2*np.pi*0.1*self.t) - np.pi/9
-        pid_out_2 = self.pid_m2.step(self.signal, self.sensor_state.angle_motor_2)
-        #print(self.sensor_state.angle_motor_1)
-
-        # pc.set(0, pid_out_1)
-        # pc.set(1, self.sensor_state.angle_motor_1)
-        # pc.send()
+        # self.sin_signal_m1 = 0.5 + 0.45 * np.sin(1/4 * np.pi * self.t)
+        # self.sin_signal_m2 = 0.15 * np.sin(1/4 * np.pi * self.t)
+        # pid_out_1 = self.pid_m1.step(self.sin_signal_m1, self.sensor_state.angle_motor_1) #0.05*np.sin(2*np.pi*0.1*self.t) - np.pi/9
+        # pid_out_2 = self.pid_m2.step(self.sin_signal_m2, self.sensor_state.angle_motor_2)
 
         # limiting the pid output to max absolute val of 0.7
         #if pid_out_1 > 0.7:
@@ -211,38 +199,7 @@ class StateFunctions(object):
         self.motor_1.write(pid_out_1)
         self.motor_2.write(pid_out_2)
 
-
-        # dma2 = dq2 + dq1
-        # m1dot_sp = qdot_sp[0]
-        # m2dot_sp = qdot_sp[0] + qdot_sp[1]
-        # m1dot = self.m1_previous - self.sensor_state.angle_motor_1 * self.frequency
-        # m2dot = self.m2_previous - self.sensor_state.angle_motor_2 * self.frequency
-
-        
-        # TODO: here the controller has to do its part
-        # > measure the real m1dot, m2dot and compare to the m1dot_sp and m2dot_sp
-        # > get the difference (error)
-        # > use the error in PID controller to output pwm signal to the motors (0 to 1)
-        # > cap the pwm signal to 0.8 (motor safety factor)
-
-        # implementation of controller
-        # reference1 = m1dot 
-        # measured1 = self.sensor_state.angular_velocity #still needs to be made in the sensor.py file but not done bc of potential merge conflicts
-        # reference1 = m2dot 
-        # measured2 = self.sensor_state.angular_velocity #still needs to be made in the sensor.py file but not done bc of potential merge conflicts
-        # self.pid_m1.step(reference1, measured1)
-        # self.pid_m1.step(reference2, measured2)
-        # self.pid_m1.step()
-
-        # self.motor_1.write()
-        # self.motor_2.write()
-        
-
-        # TODO: check plus and minus definitions of pwm and m - the below are educated guesses
-        # for motor one - negative pwm makes it move in positive m direction
-        # for motor two - negative pwm makes it move in negative m direction
-
-        # older test code
+        # OLD EMG-TO-MOTOR TEST CODE
         # emg0 *= -0.8             # motor safety factor - let's not use more than 0.8 of max power
         # TODO: map the emg_value to pwm signal and send to the motors!
         #emg0 = self.sensor_state.emg_value[0]                 # hopefully 0 to 1
@@ -251,11 +208,10 @@ class StateFunctions(object):
         #print(emg0)
         # self.motor_1.write(emg0)  # TODO: uncomment for the motor to move
 
-        # Compensation controller (motor 1)
+        # COMPENSATION CONTROLLER (motor 1)
         #self.c1 = 0.05
         #self.c2 = 0
         #self.c3 = 6
-
         #self.compensation_controller.change_coefficient(self.sensor_state.potmeter_value)
         #print(self.compensation_controller.c2)
         #self.compensated_PWM_value = self.compensation_controller.calculate_u(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_1_previous)
@@ -266,18 +222,9 @@ class StateFunctions(object):
         # print(self.compensated_PWM_value)
         # self.motor_1.write(self.compensated_PWM_value)
 
-
-
-
         ## IMPORTANT: leave this code as last in the main action
         self.m1_previous = self.sensor_state.angle_motor_1 
         self.m2_previous = self.sensor_state.angle_motor_2
-      
-        #self.time = self.n * self.ticker_period
-        #self.pwm_value = 0.6 * np.sin(self.sin_step*self.n)
-        #self.motor_1.write(self.pwm_value)
-        #print(self.pwm_value)
-        #self.n += 1
 
         ## Exit guards
         if self.sensor_state.switch_value == 1:

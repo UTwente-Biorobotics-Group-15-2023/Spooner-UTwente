@@ -16,7 +16,7 @@ He00[1,2] = L1+L2   # origin y
 
 # control parameters
 Kv = 0.7
-vmax = 0.05
+vmax = 0.04 # maximum velocity of the end effector per axis (m/s)
 
 def get_joint_angle(motor_angle_1, motor_angle_2):
     """
