@@ -23,7 +23,7 @@ class StateFunctions(object):
         # EMG calibration
         self.max_emg_pre_calibration = 0
         self.calibration_timer = 0
-        self.calibration_time = 3 # in seconds, min is 3
+        self.calibration_time = 10 # in seconds, min is 3
         self.calibration_sum_0 = 0
         self.calibration_sum_1 = 0
         self.calibration_sum_2 = 0
@@ -155,10 +155,16 @@ class StateFunctions(object):
         emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of range 0 to 1
         emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
 
+        emg1 = self.sensor_state.emg_value[1]                 # hopefully not much out of range 0 to 1
+        emg1 = 0 if emg1 < 0 else 1 if emg1 > 1 else emg1     # let's make sure it's really 0 to 1
+
         # Get the desired joint velocities (setpoint) from the EMG
-        self.sin_signal_velocity = -1 * np.sin(1/6 * np.pi * self.t)
-        self.t += 1/self.frequency                  # euler integration
-        v = np.array([self.sin_signal_velocity, self.sin_signal_velocity]) # we want to do 0.5 max speed in x direction
+        v = np.array([-emg1 + emg0, 0]) # be default make the arm slowly move backwards, but when emg present - move forward
+
+        # self.sin_signal_velocity = -1 * np.sin(1/6 * np.pi * self.t)
+        # self.t += 1/self.frequency                  # euler integration
+        # v = np.array([self.sin_signal_velocity, self.sin_signal_velocity]) # diagonal sin signal
+
         qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
         self.q_sp += qdot_sp * 1/self.frequency     # euler integration
         # print('joint 1 desired: ',self.q_sp[0])
@@ -174,8 +180,8 @@ class StateFunctions(object):
         self.motor_2.write(pid_out_2)
 
         # serial output the angle errors
-        pc.set(0, self.sensor_state.angle_motor_1 - m1_sp)
-        pc.set(1, self.sensor_state.angle_motor_2 - m2_sp)
+        pc.set(0, emg0)
+        pc.set(1, v[0])
         pc.set(2, pid_out_1)
         pc.set(3, pid_out_2)
         q1, q2 = rki.get_joint_angle(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2)
