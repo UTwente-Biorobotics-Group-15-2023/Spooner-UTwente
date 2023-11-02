@@ -16,7 +16,7 @@ He00[1,2] = L1+L2   # origin y
 
 # control parameters
 Kv = 0.7
-vmax = 0.04 # maximum velocity of the end effector per axis (m/s)
+vmax = 0.05 # maximum velocity of the end effector per axis (m/s)
 
 def get_joint_angle(motor_angle_1, motor_angle_2):
     """
@@ -25,7 +25,7 @@ def get_joint_angle(motor_angle_1, motor_angle_2):
     =OUTPUT= get the angle for the virtual robot arm q1, q2 (rad)
     """
     q1 = motor_angle_1
-    q2 = 1/4*np.pi + motor_angle_2 - motor_angle_1 # minus might change into plus depending on the reference configuration
+    q2 = 1/2*np.pi + motor_angle_2 - motor_angle_1 # minus might change into plus depending on the reference configuration
     return q1, q2
 
 # Forward kinematics
@@ -36,6 +36,21 @@ def get_H(q1, q2): # get the H matrix of EE to 0
 
     H = np.dot(np.dot(expT(T1_t*q1), expT(T2_t*q2)) , He00)
     return H
+
+def scale_v(v, q1, q2, ticker_frequency, pe0):
+    # Define the circle's center and radius
+    x = 0.0  # X-coordinate of the circle's center
+    y = 0.0  # Y-coordinate of the circle's center
+    r = 0.55 # Radius of the circle
+
+    v = vmax * v # since v is the emg signal from 0 to 1 which is capped, this code will limit the v to vmax
+    ps_mod = pe0 + v * 1/ticker_frequency # Get the next (desired) ee point's coordinates based on desired velocity
+
+    # Check if the point is inside the circle
+    distance = np.sqrt((ps_mod[0] - x)*2 + (ps_mod[1] - y)*2)
+    if distance > r: # circle 
+        v = np.array([0, 0])
+    return v
 
 def get_J(q1): # Calculate the Jacobian using the modified jacobien method
     """
@@ -61,11 +76,7 @@ def get_qdot(motor_angle_1, motor_angle_2, v, ticker_frequency):
 
     pe0 = He0[:2,2] # grab the position of the EE from the H matrix
 
-    ## Modified Jacobian method
-    # v = Kv * (set_point - pe0)
-    # v[v>vmax] = vmax
-    # v[v<-vmax] = -vmax
-
+    #v = scale_v(v, q1, q2, ticker_frequency, pe0)
     v = vmax * v # since v is the emg signal from 0 to 1 which is capped, this code will limit the v to vmax
 
     H0f = np.eye(3)

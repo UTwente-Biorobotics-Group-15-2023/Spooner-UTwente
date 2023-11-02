@@ -9,9 +9,9 @@ from biorobotics import SerialPC
 
 # Home state motor angles. Global since always constant
 m1 = (-6) * np.pi/180
-m2 = (-13) * np.pi/180 # q2 = 1/4*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/4*np.pi => will equal -13deg at home state
+m2 = (-13) * np.pi/180 # q2 = 1/2*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/2*np.pi => will equal -13deg at home state
 
-pc = SerialPC(2)
+pc = SerialPC(5)
 class StateFunctions(object):
 
     def __init__(self, robot_state, sensor_state, ticker_frequency):
@@ -32,15 +32,15 @@ class StateFunctions(object):
         self.compensation_controller = CompensationController(ticker_frequency)
 
         ## PID Stuff
-        self.pid_m1 = PID(1/ticker_frequency, 15, 0.01, 1) #kp = 20.6897, ki = 114.9425, kd = 0.9310
-        self.pid_m2 = PID(1/ticker_frequency, 15, 0.01, 1)
+        self.pid_m1 = PID(1/ticker_frequency, 40, 1, 5) #kp = 20.6897, ki = 114.9425, kd = 0.9310
+        self.pid_m2 = PID(1/ticker_frequency, 40, 1, 5)
         self.m1_previous = 0
         self.m2_previous = 0
 
         ## Motors
         self.motor_1 = Motor(18000, 1)
         self.motor_2 = Motor(18000, 2)
-        self.q_sp = np.array([m1, 1/4*np.pi + m2 - m1])
+        self.q_sp = np.array([m1, 1/2*np.pi + m2 - m1])
         self.t = 0
 
         ## Callback states
@@ -90,10 +90,10 @@ class StateFunctions(object):
         
         ## Main action
         self.motor_1.write(-0.80) # Turn on M1 at low speed until ks is reached
-        if self.sensor_state.ks_one_value == 0:
+        if self.sensor_state.ks_two_value == 0:
             self.motor_1.write(0)
         self.motor_2.write(-0.60) # Turn on M2 at low speed until ks is reached
-        if self.sensor_state.ks_two_value == 0:
+        if self.sensor_state.ks_one_value == 0:
             self.motor_2.write(0)
 
         ## Exit guards
@@ -133,10 +133,6 @@ class StateFunctions(object):
             self.robot_state.set(State.MOVE)
         return
 
-    def get_q_current(self):
-        q1 = self.sensor_state.angle_motor_1
-        q2 = self.sensor_state.angle_motor_2 + q1 - 1/4*np.pi
-        return np.array([q1, q2])
 
     ## State MOVE
     def move(self):
@@ -149,10 +145,6 @@ class StateFunctions(object):
             print("MOVE")
 
         ## Main action
-        # print("IN MOVE STATE")
-        # Show the motor angles
-        # print("Motor 1 angle: ", self.sensor_state.angle_motor_1)
-        # print("Motor 2 angle: ", 1/4*np.pi + self.sensor_state.angle_motor_2 - self.sensor_state.angle_motor_1)
 
         # HOW THE BELOW CODE WORKS:
         # • we have desired ee velocity that is mapped from from the EMG signal
@@ -160,44 +152,40 @@ class StateFunctions(object):
         # • we map the desired joint velocity to the motor pwm and input it
 
         # get the 0th emg signal and costrain it to range 0 to 1
-        # emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of the range 0 to 1
-        # emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
-        # print(emg0)
+        emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of range 0 to 1
+        emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
 
-        # Get the desired joint velocities (setpoint) from the EMG, for now only used for controlling y-axis
-        v = np.array([-0.5, 0]) # we want to do 0.5 max speed in x direction
-        qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
-        
-        # TODO: Change vmax so it will go slowly
+        # Get the desired joint velocities (setpoint) from the EMG
+        self.sin_signal_velocity = -1 * np.sin(1/6 * np.pi * self.t)
         self.t += 1/self.frequency                  # euler integration
+        v = np.array([self.sin_signal_velocity, self.sin_signal_velocity]) # we want to do 0.5 max speed in x direction
+        qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
         self.q_sp += qdot_sp * 1/self.frequency     # euler integration
-        print('joint 1 desired: ',self.q_sp[0])
-        print('joint 2 desired: ',self.q_sp[1])
+        # print('joint 1 desired: ',self.q_sp[0])
+        # print('joint 2 desired: ',self.q_sp[1])
 
         # Get m1_sp and m2_sp from the q_sp (go from joint to motor angles)
         m1_sp = self.q_sp[0]
-        m2_sp = self.q_sp[1] + self.q_sp[0] - 1/4*np.pi
+        m2_sp = self.q_sp[1] + self.q_sp[0] - 1/2*np.pi
+
+        pid_out_1 = self.pid_m1.step(m1_sp, self.sensor_state.angle_motor_1)
+        pid_out_2 = self.pid_m2.step(m2_sp, self.sensor_state.angle_motor_2)
+        self.motor_1.write(pid_out_1)
+        self.motor_2.write(pid_out_2)
 
         # serial output the angle errors
         pc.set(0, self.sensor_state.angle_motor_1 - m1_sp)
         pc.set(1, self.sensor_state.angle_motor_2 - m2_sp)
+        pc.set(2, pid_out_1)
+        pc.set(3, pid_out_2)
+        q1, q2 = rki.get_joint_angle(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2)
+        pc.set(4, q2)
         pc.send()
-
-        pid_out_1 = self.pid_m1.step(m1_sp, self.sensor_state.angle_motor_1)
-        pid_out_2 = self.pid_m2.step(m2_sp, self.sensor_state.angle_motor_2)
         
-        # self.sin_signal_m1 = 0.5 + 0.45 * np.sin(1/4 * np.pi * self.t)
-        # self.sin_signal_m2 = 0.15 * np.sin(1/4 * np.pi * self.t)
+        # self.sin_signal_m1 = 0.5 + 0.45 * np.sin(1/2 * np.pi * self.t)
+        # self.sin_signal_m2 = 0.15 * np.sin(1/2 * np.pi * self.t)
         # pid_out_1 = self.pid_m1.step(self.sin_signal_m1, self.sensor_state.angle_motor_1) #0.05*np.sin(2*np.pi*0.1*self.t) - np.pi/9
         # pid_out_2 = self.pid_m2.step(self.sin_signal_m2, self.sensor_state.angle_motor_2)
-
-        # limiting the pid output to max absolute val of 0.7
-        #if pid_out_1 > 0.7:
-            #pid_out_1 = 0.7
-        #elif pid_out_1 < -0.7:
-            #pid_out_1 = -0.7
-        self.motor_1.write(pid_out_1)
-        self.motor_2.write(pid_out_2)
 
         # OLD EMG-TO-MOTOR TEST CODE
         # emg0 *= -0.8             # motor safety factor - let's not use more than 0.8 of max power
