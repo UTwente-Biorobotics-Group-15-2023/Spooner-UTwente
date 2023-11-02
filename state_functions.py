@@ -29,22 +29,23 @@ class StateFunctions(object):
         self.calibration_sum_1 = 0
         self.calibration_sum_2 = 0
 
-        self.T = 4
+        #self.T = 4
+
+        #self.ticker_period = 1/ticker_frequency
+        #self.sin_total_steps = self.T/self.ticker_period
+        #self.sin_step = 2*np.pi / self.sin_total_steps
+        #self.time = 0
+        #self.n = 0
 
         self.ticker_period = 1/ticker_frequency
-        self.sin_total_steps = self.T/self.ticker_period
-        self.sin_step = 2*np.pi / self.sin_total_steps
-        self.time = 0
-        self.n = 0
-
         #self.sensor_state.
 
         ## Compensation controller
         self.compensation_controller = CompensationController(ticker_frequency)
 
         ## PID Stuff
-        self.pid_m1 = PID(1/ticker_frequency, 20.6897, 114.9425 , 0.931) #kp = 20.6897, ki = 114.9425, kd = 0.9310
-        self.pid_m2 = PID(1/ticker_frequency, 20.6897, 114.9425, 0.9310)
+        self.pid_m1 = PID(1/ticker_frequency, 3, 0.01, 1) #kp = 20.6897, ki = 114.9425, kd = 0.9310
+        self.pid_m2 = PID(1/ticker_frequency, 3, 0.01, 1)
         self.m1_previous = 0
         self.m2_previous = 0
 
@@ -102,7 +103,7 @@ class StateFunctions(object):
             print('Robot moving to HOME STATE.\nYou can always press the BlueSwitch for EMERGENCY STOP')
         
         ## Main action
-        self.motor_1.write(-0.60) # Turn on M1 at low speed until ks is reached
+        self.motor_1.write(-0.80) # Turn on M1 at low speed until ks is reached
         if self.sensor_state.ks_one_value == 0:
             self.motor_1.write(0)
         self.motor_2.write(-0.60) # Turn on M2 at low speed until ks is reached
@@ -188,9 +189,14 @@ class StateFunctions(object):
         # pid_out_1 = self.pid_m1.step(ma1_sp, self.sensor_state.angle_motor_1)
         # pid_out_2 = self.pid_m2.step(ma2_sp, self.sensor_state.angle_motor_2)
         
-        #self.t += self.ticker_period
-        pid_out_1 = -self.pid_m1.step(0.5, self.sensor_state.angle_motor_1) #0.05*np.sin(2*np.pi*0.1*self.t) - np.pi/9
-        # pid_out_2 = self.pid_m2.step(ma2_sp, self.sensor_state.angle_motor_2)
+        self.t += self.ticker_period
+        self.sin_signal = 0.5 + 0.45 * np.sin(1/4 * np.pi * self.t)
+        if self.sin_signal > 0.94:
+            self.signal = 0.95
+        elif self.sin_signal < 0.09:
+            self.signal = 0.05
+        pid_out_1 = self.pid_m1.step(self.signal, self.sensor_state.angle_motor_1) #0.05*np.sin(2*np.pi*0.1*self.t) - np.pi/9
+        pid_out_2 = self.pid_m2.step(self.signal, self.sensor_state.angle_motor_2)
         #print(self.sensor_state.angle_motor_1)
 
         # pc.set(0, pid_out_1)
@@ -198,12 +204,12 @@ class StateFunctions(object):
         # pc.send()
 
         # limiting the pid output to max absolute val of 0.7
-        if pid_out_1 > 0.7:
-            pid_out_1 = 0.7
-        elif pid_out_1 < -0.7:
-            pid_out_1 = -0.7
-        self.motor_1.write(-pid_out_1)
-        # self.motor_2.write(pid_out_2)
+        #if pid_out_1 > 0.7:
+            #pid_out_1 = 0.7
+        #elif pid_out_1 < -0.7:
+            #pid_out_1 = -0.7
+        self.motor_1.write(pid_out_1)
+        self.motor_2.write(pid_out_2)
 
 
         # dma2 = dq2 + dq1
@@ -259,6 +265,9 @@ class StateFunctions(object):
         # self.compensated_PWM_value = self.compensation_controller.calculate_u(self.angle_current_1, self.angle_previous_1)
         # print(self.compensated_PWM_value)
         # self.motor_1.write(self.compensated_PWM_value)
+
+
+
 
         ## IMPORTANT: leave this code as last in the main action
         self.m1_previous = self.sensor_state.angle_motor_1 
