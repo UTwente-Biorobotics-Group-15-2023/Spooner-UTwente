@@ -52,6 +52,29 @@ class StateFunctions(object):
             State.EMERGENCY_STOP: self.emergency_stop,
         }
         return
+    
+    def get_v(self):
+         # get the 0th emg signal and costrain it to range 0 to 1
+        emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of range 0 to 1
+        emg0 = 0 if emg0 < 0.2 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
+
+        emg1 = self.sensor_state.emg_value[1]
+        emg1 = 0 if emg1 < 0.2 else 1 if emg1 > 1 else emg1     # let's make sure it's really 0 to 1
+        
+        emg2 = self.sensor_state.emg_value[2]
+        emg2 = -1 if emg2 < 0.6 else 1                        # let's make it 1 or -1 to invert axis velocities
+
+        # Get the desired joint velocities (setpoint) from the EMG
+        v = np.array([emg0*emg2, emg1*emg2]) # be default make the arm slowly move backwards, but when emg present - move forward
+
+        pc.set(0, emg0)
+        pc.set(1, self.sensor_state.emg_value[2])
+        pc.set(2, emg2)
+        pc.set(3, v[0])
+        pc.set(4, v[1])
+        pc.send()
+        
+        return v
 
     ## State CALIBRATE
     def calibrate(self):
@@ -64,6 +87,7 @@ class StateFunctions(object):
             self.robot_state.set(State.CALLIBRATE)
 
         ## Main action
+        self.get_v()
         self.calibration_timer += 1
         if self.calibration_timer > self.frequency * 2: # wait two seconds, then start collecting emg data
             self.calibration_sum_0 += self.sensor_state.emg_value[0]
@@ -89,6 +113,7 @@ class StateFunctions(object):
             print('Robot moving to HOME STATE.\nYou can always press the BlueSwitch for EMERGENCY STOP')
         
         ## Main action
+        self.get_v()
         self.motor_1.write(-0.80) # Turn on M1 at low speed until ks is reached
         if self.sensor_state.ks_two_value == 0:
             self.motor_1.write(0)
@@ -120,6 +145,7 @@ class StateFunctions(object):
             print("Motor 2 angle: ", self.sensor_state.angle_motor_2)
 
         ## Main action
+        self.get_v()
         # Kill the motors
         self.motor_1.write(0)
         self.motor_2.write(0)
@@ -151,20 +177,11 @@ class StateFunctions(object):
         # • we do the kinematics to get the desired joint velocity
         # • we map the desired joint velocity to the motor pwm and input it
 
-        # get the 0th emg signal and costrain it to range 0 to 1
-        emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of range 0 to 1
-        emg0 = 0 if emg0 < 0 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
-
-        emg1 = self.sensor_state.emg_value[1]                 # hopefully not much out of range 0 to 1
-        emg1 = 0 if emg1 < 0 else 1 if emg1 > 1 else emg1     # let's make sure it's really 0 to 1
-
-        # Get the desired joint velocities (setpoint) from the EMG
-        v = np.array([-emg1 + emg0, 0]) # be default make the arm slowly move backwards, but when emg present - move forward
-
         # self.sin_signal_velocity = -1 * np.sin(1/6 * np.pi * self.t)
         # self.t += 1/self.frequency                  # euler integration
         # v = np.array([self.sin_signal_velocity, self.sin_signal_velocity]) # diagonal sin signal
 
+        v = self.get_v()
         qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
         self.q_sp += qdot_sp * 1/self.frequency     # euler integration
         # print('joint 1 desired: ',self.q_sp[0])
@@ -180,13 +197,8 @@ class StateFunctions(object):
         self.motor_2.write(pid_out_2)
 
         # serial output the angle errors
-        pc.set(0, emg0)
-        pc.set(1, v[0])
-        pc.set(2, pid_out_1)
-        pc.set(3, pid_out_2)
+        
         q1, q2 = rki.get_joint_angle(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2)
-        pc.set(4, q2)
-        pc.send()
         
         # self.sin_signal_m1 = 0.5 + 0.45 * np.sin(1/2 * np.pi * self.t)
         # self.sin_signal_m2 = 0.15 * np.sin(1/2 * np.pi * self.t)

@@ -10,10 +10,10 @@ function Hd = test_stop
 % All frequency values are in Hz.
 Fs = 300;  % Sampling Frequency
 
-Fpass1 = 40;          % First Passband Frequency
-Fstop1 = 48;          % First Stopband Frequency
-Fstop2 = 53;          % Second Stopband Frequency
-Fpass2 = 60;          % Second Passband Frequency
+Fpass1 = 96;          % First Passband Frequency
+Fstop1 = 98;          % First Stopband Frequency
+Fstop2 = 102;          % Second Stopband Frequency
+Fpass2 = 104;          % Second Passband Frequency
 Apass1 = 0.5;         % First Passband Ripple (dB)
 Astop  = 60;          % Stopband Attenuation (dB)
 Apass2 = 1;           % Second Passband Ripple (dB)
@@ -23,5 +23,7 @@ match  = 'stopband';  % Band to match exactly
 h  = fdesign.bandstop(Fpass1, Fstop1, Fstop2, Fpass2, Apass1, Astop, ...
                       Apass2, Fs);
 Hd = design(h, 'butter', 'MatchExactly', match);
+
+fvtool(Hd, Fs)
 
 % [EOF]
