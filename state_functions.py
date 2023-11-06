@@ -114,12 +114,15 @@ class StateFunctions(object):
         
         ## Main action
         self.get_v()
-        self.motor_1.write(-0.80) # Turn on M1 at low speed until ks is reached
-        if self.sensor_state.ks_two_value == 0:
-            self.motor_1.write(0)
-        self.motor_2.write(-0.60) # Turn on M2 at low speed until ks is reached
         if self.sensor_state.ks_one_value == 0:
+            self.motor_1.write(0)
+        else:
+            self.motor_1.write(-0.80) # Turn on M1 at low speed until ks is reached
+        
+        if self.sensor_state.ks_two_value == 0:
             self.motor_2.write(0)
+        else:
+            self.motor_2.write(-0.60) # Turn on M2 at low speed until ks is reached
 
         ## Exit guards
         if self.sensor_state.switch_value == 1:
@@ -181,7 +184,9 @@ class StateFunctions(object):
         # self.t += 1/self.frequency                  # euler integration
         # v = np.array([self.sin_signal_velocity, self.sin_signal_velocity]) # diagonal sin signal
 
-        v = self.get_v()
+        # TODO: uncomment the below to control the robot using EMG again
+        # v = self.get_v()
+        v = np.array([-0.8, 0])
         qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
         self.q_sp += qdot_sp * 1/self.frequency     # euler integration
         # print('joint 1 desired: ',self.q_sp[0])

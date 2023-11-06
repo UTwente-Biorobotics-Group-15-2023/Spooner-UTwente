@@ -41,15 +41,16 @@ def scale_v(v, ticker_frequency, pe0):
     # Define the circle's center and radius
     x = 0.0  # X-coordinate of the circle's center
     y = 0.0  # Y-coordinate of the circle's center
-    r = 0.55 # Radius of the circle
+    r = 0.59 # Radius of the circle
 
     v = vmax * v # since v is the emg signal from 0 to 1 which is capped, this code will limit the v to vmax
     ps_mod = pe0 + v * 1/ticker_frequency # Get the next (desired) ee point's coordinates based on desired velocity
 
     # Check if the point is inside the circle
-    distance = np.sqrt((ps_mod[0] - x)*2 + (ps_mod[1] - y)*2)
+    distance = np.sqrt((ps_mod[0] - x)**2 + (ps_mod[1] - y)**2)
     if distance > r: # circle
-        v = np.array([0, 0])
+        print('outside range')
+        v = -v
     return v
 
 def get_J(q1): # Calculate the Jacobian using the modified jacobien method
