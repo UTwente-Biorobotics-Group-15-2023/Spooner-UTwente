@@ -37,7 +37,7 @@ def get_H(q1, q2): # get the H matrix of EE to 0
     H = np.dot(np.dot(expT(T1_t*q1), expT(T2_t*q2)) , He00)
     return H
 
-def scale_v(v, q1, q2, ticker_frequency, pe0):
+def scale_v(v, ticker_frequency, pe0):
     # Define the circle's center and radius
     x = 0.0  # X-coordinate of the circle's center
     y = 0.0  # Y-coordinate of the circle's center
@@ -48,7 +48,7 @@ def scale_v(v, q1, q2, ticker_frequency, pe0):
 
     # Check if the point is inside the circle
     distance = np.sqrt((ps_mod[0] - x)*2 + (ps_mod[1] - y)*2)
-    if distance > r: # circle 
+    if distance > r: # circle
         v = np.array([0, 0])
     return v
 
@@ -76,8 +76,8 @@ def get_qdot(motor_angle_1, motor_angle_2, v, ticker_frequency):
 
     pe0 = He0[:2,2] # grab the position of the EE from the H matrix
 
-    #v = scale_v(v, q1, q2, ticker_frequency, pe0)
-    v = vmax * v # since v is the emg signal from 0 to 1 which is capped, this code will limit the v to vmax
+    v = scale_v(v, ticker_frequency, pe0)
+    # v = vmax * v # since v is the emg signal from 0 to 1 which is capped, this code will limit the v to vmax
 
     H0f = np.eye(3)
     H0f[:2,2] = -pe0 # calculate H 0 to f (frame f is attached to EE frame, but differs in that it is non rotating, always level wrt ground )
