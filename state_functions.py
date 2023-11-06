@@ -11,7 +11,7 @@ from biorobotics import SerialPC
 m1 = (-6) * np.pi/180
 m2 = (-13) * np.pi/180 # q2 = 1/2*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/2*np.pi => will equal -13deg at home state
 
-pc = SerialPC(5)
+pc = SerialPC(3)
 class StateFunctions(object):
 
     def __init__(self, robot_state, sensor_state, ticker_frequency):
@@ -70,8 +70,8 @@ class StateFunctions(object):
         pc.set(0, emg0)
         pc.set(1, self.sensor_state.emg_value[2])
         pc.set(2, emg2)
-        pc.set(3, v[0])
-        pc.set(4, v[1])
+        # pc.set(3, v[0])
+        # pc.set(4, v[1])
         pc.send()
         
         return v
@@ -185,8 +185,8 @@ class StateFunctions(object):
         # v = np.array([self.sin_signal_velocity, self.sin_signal_velocity]) # diagonal sin signal
 
         # TODO: uncomment the below to control the robot using EMG again
-        # v = self.get_v()
-        v = np.array([-0.8, 0])
+        v = self.get_v()
+        # v = np.array([-0.8, 0])
         qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
         self.q_sp += qdot_sp * 1/self.frequency     # euler integration
         # print('joint 1 desired: ',self.q_sp[0])
