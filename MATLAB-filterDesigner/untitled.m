@@ -11,7 +11,7 @@ fs = 300; % sample freqency in Hz
 figure(1)
 plot(t - offset, y);
 xlabel('time (s)')
-ylabel('(V?)')
+ylabel('(V)')
 title('Time domain EMG measurement data')
 
 %% FFT 
