@@ -68,6 +68,7 @@ class StateFunctions(object):
         # Get the desired joint velocities (setpoint) from the EMG
         v = np.array([emg0*emg2, emg1*emg2]) # be default make the arm slowly move backwards, but when emg present - move forward
 
+<<<<<<< HEAD
         
         pc.set(1, self.sensor_state.angle_motor_1)
         pc.set(2, self.sensor_state.angle_motor_2)
@@ -75,6 +76,13 @@ class StateFunctions(object):
         #pc.set(3, emg2)
         #pc.set(4, v[0])
         #pc.set(5, v[1])
+=======
+        pc.set(0, emg0)
+        pc.set(1, self.sensor_state.emg_value[2])
+        pc.set(2, emg2)
+        # pc.set(3, v[0])
+        # pc.set(4, v[1])
+>>>>>>> d76e5a5d315ab0cc4d96fd61e7402ff29c25f0b7
         pc.send()
         
         return v
