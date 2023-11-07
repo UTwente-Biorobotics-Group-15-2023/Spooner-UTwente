@@ -11,7 +11,7 @@ from biorobotics import SerialPC
 m1 = (-6) * np.pi/180
 m2 = (-13) * np.pi/180 # q2 = 1/2*np.pi + ma2 - ma1 =>> ma2 = q2 + q1 - 1/2*np.pi => will equal -13deg at home state
 
-pc = SerialPC(5)
+pc = SerialPC(3)
 class StateFunctions(object):
 
     def __init__(self, robot_state, sensor_state, ticker_frequency):
@@ -56,22 +56,25 @@ class StateFunctions(object):
     def get_v(self):
          # get the 0th emg signal and costrain it to range 0 to 1
         emg0 = self.sensor_state.emg_value[0]                 # hopefully not much out of range 0 to 1
+        pc.set(0, emg0)
         emg0 = 0 if emg0 < 0.2 else 1 if emg0 > 1 else emg0     # let's make sure it's really 0 to 1
 
         emg1 = self.sensor_state.emg_value[1]
         emg1 = 0 if emg1 < 0.2 else 1 if emg1 > 1 else emg1     # let's make sure it's really 0 to 1
         
         emg2 = self.sensor_state.emg_value[2]
-        emg2 = -1 if emg2 < 0.6 else 1                        # let's make it 1 or -1 to invert axis velocities
+        emg2 = -1 if emg2 < 0.62 else 1                        # let's make it 1 or -1 to invert axis velocities
 
         # Get the desired joint velocities (setpoint) from the EMG
         v = np.array([emg0*emg2, emg1*emg2]) # be default make the arm slowly move backwards, but when emg present - move forward
 
-        pc.set(0, emg0)
-        pc.set(1, self.sensor_state.emg_value[2])
-        pc.set(2, emg2)
-        pc.set(3, v[0])
-        pc.set(4, v[1])
+        
+        pc.set(1, self.sensor_state.angle_motor_1)
+        pc.set(2, self.sensor_state.angle_motor_2)
+        #pc.set(2, self.sensor_state.emg_value[2])
+        #pc.set(3, emg2)
+        #pc.set(4, v[0])
+        #pc.set(5, v[1])
         pc.send()
         
         return v
@@ -185,8 +188,8 @@ class StateFunctions(object):
         # v = np.array([self.sin_signal_velocity, self.sin_signal_velocity]) # diagonal sin signal
 
         # TODO: uncomment the below to control the robot using EMG again
-        # v = self.get_v()
-        v = np.array([-0.8, 0])
+        v = self.get_v()
+        # v = np.array([-0.8, 0])
         qdot_sp = rki.get_qdot(self.sensor_state.angle_motor_1, self.sensor_state.angle_motor_2, v, self.frequency)
         self.q_sp += qdot_sp * 1/self.frequency     # euler integration
         # print('joint 1 desired: ',self.q_sp[0])

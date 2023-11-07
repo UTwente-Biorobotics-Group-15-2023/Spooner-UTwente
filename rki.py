@@ -50,7 +50,7 @@ def scale_v(v, ticker_frequency, pe0):
     distance = np.sqrt((ps_mod[0] - x)**2 + (ps_mod[1] - y)**2)
     if distance > r: # circle
         print('outside range')
-        v = -v
+        v = -2*v
     return v
 
 def get_J(q1): # Calculate the Jacobian using the modified jacobien method
