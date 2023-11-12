@@ -1,4 +1,3 @@
-
 class Biquad:
     def __init__(self, a1, a2, b0, b1, b2):
         self.a1 = a1
@@ -14,5 +13,5 @@ class Biquad:
         self.w1 = float(self.b1*x - self.a1*y + self.w2)
         self.w2 = float(self.b2*x - self.a2*y)
         return y
-    
-    
+
+

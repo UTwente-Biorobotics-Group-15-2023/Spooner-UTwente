@@ -2,8 +2,11 @@ from biorobotics import Encoder
 from pin_definitions import Pins
 from ulab import numpy as np
 
+
 class EncoderStats(object):
     def __init__(self, selected_motor, ticker_frequency):
+        pin_1 = 0
+        pin_2 = 0
         if selected_motor == 1:
             pin_1 = Pins.MOTOR_1_ENCODER_1
             pin_2 = Pins.MOTOR_1_ENCODER_2
@@ -15,13 +18,17 @@ class EncoderStats(object):
         self.encoder = Encoder(pin_1, pin_2)
         self.home_state_offset = 0
         self.step_to_rad = 360 / 8400 * (np.pi / 180)
-        self.period = 1/ticker_frequency
+        self.period = 1 / ticker_frequency
+        self.count = 0
+        self.counter = 0
+        self.angle_radians = 0
+        self.angular_velocity = 0
         return
 
     # wrapper, wraps every 8400 counts
     def get_count(self):
         # we want to make sure that wrapping happens on the correct side of the home state:
-        # > m1 should increase the counter when goning counter clockwise, instead it decreases it
+        # > m1 should increase the counter when going counterclockwise, instead it decreases it
         # > m2 works good
         if self.motor == 1:
             self.counter = - self.encoder.counter()
@@ -37,19 +44,19 @@ class EncoderStats(object):
     # !! Please input only positive angles !! (e.g. map -pi/2 to 3pi/2)
     def set_angle(self, home_angle_rad):
         # no matter what we read rn, we are currently at home_angle_rad
-        # we wanna set our counter to the corresponding value
+        # we want to set our counter to the corresponding value
         if self.motor == 1:
-            self.encoder.set_counter( -round(home_angle_rad * 1/self.step_to_rad) )
+            self.encoder.set_counter(-round(home_angle_rad * 1 / self.step_to_rad))
         elif self.motor == 2:
-            self.encoder.set_counter( round(home_angle_rad * 1/self.step_to_rad) )
+            self.encoder.set_counter(round(home_angle_rad * 1 / self.step_to_rad))
         return
-    
+
     # def set_angle(self, home_angle_rad):
     #     # no matter what we read rn, we are currently at home_angle
-    #     # we wanna make sure we now read that 
+    #     # we want to make sure we now read that
     #     self.home_state_offset = home_angle_rad - self.get_angle()
     #     return
-    
+
     def get_angular_velocity(self, angle_current, angle_previous):
         self.angular_velocity = (angle_current - angle_previous) / self.period
         return self.angular_velocity

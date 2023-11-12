@@ -18,13 +18,14 @@ class CompensationController(object):
                 =INPUT= pot_values change the coefficients of the compensation controller
         """
         self.c2 = -pot_values[1]
-        #self.c3 = pot_values[1]
+        # self.c3 = pot_values[1]
+
     def calculate_u(self, angle, angle_previous):
         self.velocity = (angle - angle_previous) / self.dt
         self.u_dry = self.c1 * np.tanh(self.c3 * self.velocity)
         self.u_viscous_and_backemf = self.c2 * self.velocity
         self.u = self.u_dry + self.u_viscous_and_backemf
-        
+
         # Limit the value
         if self.u > 1:
             self.u = 1

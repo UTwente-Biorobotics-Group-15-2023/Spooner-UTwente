@@ -3,7 +3,7 @@ from biorobotics import PWM
 from pin_definitions import Pins
 
 
-class Motor(object): 
+class Motor(object):
 
     def __init__(self, frequency, motor=1):
 
@@ -16,20 +16,18 @@ class Motor(object):
             self.direction = Pin(Pins.MOTOR_2_DIRECTION, Pin.OUT)
 
         return
-    
-    def write(self,pwm_value):
+
+    def write(self, pwm_value):
         """
         =INPUT=
             pwm_value - float
                 Between -1 and 1
-                Direction change is handeled based on the sign
+                Direction change is handled based on the sign
         
         """
 
-        #TODO: fix motor direction switching
-
         if pwm_value < 0:
-            self.direction.value(1) #set direction
+            self.direction.value(1)  # set direction
         else:
             self.direction.value(0)
 
